@@ -28,7 +28,7 @@ function buildSinglePageHtml({ calledYou, paragraphs, petName, bgDataUrl, includ
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n      ');
   const signatureHtml = includeSignature ? `
     <div class="signature-block">
-      <div class="pet-name">${petName} <svg width="28" height="28" viewBox="0 0 100 100" style="vertical-align:middle;margin-left:4px;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="80" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="8" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="92" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="50" cy="72" rx="28" ry="24" fill="#2c2420"/></svg></div>
+      <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
       <div class="forever-text">Forever Loved. Never Gone.</div>
       <div class="forever-line"></div>
     </div>` : '';
@@ -50,7 +50,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 
   const signatureHtml = includeSignature ? `
     <div class="signature-block">
-      <div class="pet-name">${petName} <svg width="28" height="28" viewBox="0 0 100 100" style="vertical-align:middle;margin-left:4px;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="80" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="8" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="92" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="50" cy="72" rx="28" ry="24" fill="#2c2420"/></svg></div>
+      <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
       <div class="forever-text">Forever Loved. Never Gone.</div>
       <div class="forever-line"></div>
     </div>` : '';
@@ -92,7 +92,9 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
     }
     .letter-body p { margin-bottom: 12px; }
     .signature-block { text-align: right; margin-top: 24px; padding-right: 8px; }
-    .pet-name { font-family: 'Dancing Script', cursive; font-size: 34px; font-weight: 700; color: #2c2420; }
+    .pet-name { font-family: 'Dancing Script', cursive; font-size: 34px; font-weight: 700; color: #2c2420; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .paw { display: inline-block; width: 26px; height: 26px; }
+    .paw-pad { fill: #2c2420; }
     .forever-text { font-size: 10px; color: #c4913a; letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
     .forever-line { width: 90px; height: 1.5px; background: #c47d7d; margin: 5px 0 0 auto; }
   </style>
