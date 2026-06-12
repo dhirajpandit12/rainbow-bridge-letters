@@ -9,7 +9,7 @@ const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'rainbow-bridge-bg
 const PAGE_HEIGHT = 1123;
 const PAGE_WIDTH = 794;
 const CONTENT_TOP_PADDING = 320;
-const CONTENT_BOTTOM_PADDING = 140;
+const CONTENT_BOTTOM_PADDING = 175;
 const CONTENT_SIDE_PADDING = 52;
 const CONTENT_AREA_HEIGHT = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING;
 
@@ -139,41 +139,70 @@ async function measureContentHeight(browser, paragraphs, isFirstPage) {
   return height;
 }
 
+async function measureBodyHeight(browser, paragraphs) {
+  const measureHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: ${PAGE_WIDTH}px; }
+    .measure {
+      width: ${PAGE_WIDTH - CONTENT_SIDE_PADDING * 2}px;
+      font-family: 'Lato', sans-serif;
+      font-size: 13.2px;
+      font-weight: 400;
+      line-height: 1.85;
+      color: #1a1210;
+    }
+    .measure p { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="measure" id="box">
+    ${paragraphs.map(p => `<p>${p}</p>`).join('\n')}
+  </div>
+</body>
+</html>`;
+
+  const page = await browser.newPage();
+  await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
+  await page.setContent(measureHtml, { waitUntil: 'networkidle0' });
+  const heights = await page.evaluate(() => {
+    const box = document.getElementById('box');
+    const paras = box.querySelectorAll('p');
+    const result = [];
+    let cumulative = 0;
+    paras.forEach(p => {
+      cumulative += p.offsetHeight + 12;
+      result.push(cumulative);
+    });
+    return result;
+  });
+  await page.close();
+  return heights;
+}
+
 async function findSplitPoint(browser, paragraphs) {
-  const topPadding = CONTENT_TOP_PADDING;
-  const bottomPadding = CONTENT_BOTTOM_PADDING;
-  const greetingHeight = 50;
-  const signatureHeight = 80;
-  const availablePage1 = PAGE_HEIGHT - topPadding - bottomPadding - greetingHeight - signatureHeight;
-  const availablePage2 = PAGE_HEIGHT - 60 - bottomPadding - signatureHeight;
+  const GREETING_HEIGHT = 55;
+  const SIGNATURE_HEIGHT = 90;
 
-  for (let i = 1; i <= paragraphs.length; i++) {
-    const page1Paras = paragraphs.slice(0, i);
-    const html = buildPageHtml({
-      calledYou: 'Test',
-      paragraphs: page1Paras,
-      petName: 'Test',
-      bgDataUrl: getBgDataUrl(),
-      isFirstPage: true,
-      includeSignature: false,
-    });
+  const availablePage1 = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING - GREETING_HEIGHT - SIGNATURE_HEIGHT;
+  const availablePage2 = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING - SIGNATURE_HEIGHT;
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+  const cumulativeHeights = await measureBodyHeight(browser, paragraphs);
+  const totalHeight = cumulativeHeights[cumulativeHeights.length - 1] || 0;
 
-    const bodyHeight = await page.evaluate(() => {
-      const body = document.querySelector('.letter-body');
-      return body ? body.offsetHeight : 0;
-    });
-    await page.close();
+  if (totalHeight <= availablePage1) return paragraphs.length;
 
-    if (bodyHeight > availablePage1) {
-      return Math.max(1, i - 1);
+  for (let i = 0; i < cumulativeHeights.length; i++) {
+    if (cumulativeHeights[i] > availablePage1) {
+      return Math.max(1, i);
     }
   }
 
-  return paragraphs.length;
+  return Math.floor(paragraphs.length / 2);
 }
 
 async function generatePdf({ calledYou, letterBody, petName }) {

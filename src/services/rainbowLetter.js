@@ -19,7 +19,7 @@ Instructions:
 - Respond directly to what the owner wrote in their message, address their feelings tenderly
 - Weave in the Rainbow Bridge naturally, not as a separate section
 - End with warmth specific to their bond
-- Write at least 500 words
+- Write between 500 and 650 words. No more than 650 words total.
 - Do NOT use em dashes anywhere
 - Do NOT start with "Dear [name]" as that is already printed on the letter
 - Write in plain paragraphs only, no bullet points, no headers
