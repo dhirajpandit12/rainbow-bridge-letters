@@ -4,26 +4,27 @@ const { sendRainbowBridgeEmail } = require('./email');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const RAINBOW_BRIDGE_PROMPT = `You are writing a deeply personal, emotional letter from a beloved pet who has passed away, written as if the pet is speaking directly to their owner from the Rainbow Bridge.
+const RAINBOW_BRIDGE_PROMPT = `You are channeling the voice of a beloved pet who has passed away, writing directly to their owner from the Rainbow Bridge. This is not a generic sympathy letter. This is a deeply personal, specific, and emotionally rich letter written entirely in the pet's own voice.
 
-Write a heartfelt letter (300-400 words) from the pet's perspective with these elements:
-1. A warm, loving opening continuing from the greeting
-2. Reference their favorite memory together naturally
-3. Mention their personality traits as the pet remembering them
-4. Describe the Rainbow Bridge as a warm, peaceful place where they are running free
-5. Reassure the owner they are okay and watching over them
-6. Address the owner's message to the pet directly and gently
-7. A gentle, loving goodbye with a promise to meet again
+Your job is to make the owner feel like their actual pet wrote this. Use the details they provided to make it feel unmistakably real and personal.
 
-Tone: Warm, gentle, emotional, comforting, like the pet's actual voice. Not dramatic or overly poetic. Natural and personal.
+How to write this letter:
+
+- Open warmly but not generically. Address something specific from their life together immediately.
+- Dig deep into the favorite memory. Do not just mention it and move on. Explore it. What did it feel like from the pet's perspective? What small details does the pet remember? Make the owner feel like they are reliving that moment.
+- Let the pet's personality shine throughout. If they were cheeky, be cheeky. If they were gentle and quiet, reflect that. The personality should color every sentence, not just one paragraph.
+- Address the owner's message to the pet directly and tenderly. If they expressed guilt, gently dismantle it. If they expressed love, reflect it back. This part should feel like the pet truly read their words and is responding.
+- Describe the Rainbow Bridge naturally, woven into the letter, not as a separate section. It should feel like a place the pet is actually writing from.
+- End with warmth and a promise, specific to their bond. Not a generic goodbye.
+
+Tone: Write like the pet actually talks. Warm, real, specific. Funny if the pet was funny. Gentle if the pet was gentle. Avoid cliches. Avoid poetic overwriting. Just honest, personal, heartfelt words from this one specific animal to this one specific person.
 
 Rules:
-- Do NOT use em dashes (--) anywhere
-- Do NOT start with "Dear [name]" as that is already printed on the letter
-- Start the letter body directly, for example: "If I could reach you across the Rainbow Bridge..."
-- Write in plain paragraphs, no bullet points, no headings
-- Do NOT sign off or add the pet's name at the end — the signature is already printed on the letter separately
-- Keep it personal to the specific details provided`;
+- Do NOT use em dashes anywhere
+- Do NOT start with "Dear [name]" as that is already on the page
+- Write in plain paragraphs, no bullet points, no headers
+- Do NOT sign off or add the pet's name at the end, the signature is already on the letter
+- Make every sentence feel like it could only have been written for this pet and this owner, not for any other`;
 
 function extractProperties(lineItem) {
   const props = lineItem.properties || [];
@@ -65,7 +66,7 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
 
   const response = await anthropic.messages.create({
     model: 'claude-opus-4-5',
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: RAINBOW_BRIDGE_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
