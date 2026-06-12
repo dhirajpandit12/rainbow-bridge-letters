@@ -61,7 +61,7 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
     await resend.emails.send({
       from: process.env.FROM_EMAIL,
       to: toEmail,
-      subject: `A final message from ${petName} 🐾`,
+      subject: `${petName}'s letter is ready for you`,
       html,
       attachments: [
         {
