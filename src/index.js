@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const webhookRouter = require('./routes/webhook');
+const { startQueueCron } = require('./cron/processQueue');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -26,4 +27,6 @@ app.listen(PORT, () => {
   console.log(`   Anthropic Key: ${process.env.ANTHROPIC_API_KEY ? 'set' : 'MISSING'}`);
   console.log(`   Resend Key:    ${process.env.RESEND_API_KEY ? 'set' : 'MISSING'}`);
   console.log(`   Webhook Secret: ${process.env.SHOPIFY_WEBHOOK_SECRET ? 'set' : 'MISSING'}`);
+  console.log(`   Supabase:       ${process.env.SUPABASE_URL ? 'set' : 'MISSING'}`);
+  startQueueCron();
 });

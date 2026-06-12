@@ -1,6 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const { generatePdf } = require('./pdfGenerator');
-const { sendRainbowBridgeEmail } = require('./email');
+const { saveOrderToQueue } = require('./supabase');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -73,21 +72,8 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
   return response.content[0].text.trim();
 }
 
-function randomDelayMs() {
-  const minHours = 1;
-  const maxHours = 8;
-  const hours = minHours + Math.random() * (maxHours - minHours);
-  return Math.floor(hours * 60 * 60 * 1000);
-}
-
 async function processRainbowBridgeOrder(order) {
-  const email = order.email || order.contact_email;
   const orderId = order.id;
-
-  const delayMs = randomDelayMs();
-  const delayHours = (delayMs / 3600000).toFixed(1);
-  console.log(`[Rainbow] Order ${orderId} queued — letter will be sent in ~${delayHours} hours`);
-  await new Promise(resolve => setTimeout(resolve, delayMs));
 
   const lineItem = (order.line_items || []).find(item => {
     const title = (item.title || '').toLowerCase();
@@ -106,25 +92,7 @@ async function processRainbowBridgeOrder(order) {
     return;
   }
 
-  console.log(`[Rainbow] Generating letter for ${details.petName} (order ${orderId})`);
-
-  const letterBody = await generateLetter(details);
-  console.log(`[Rainbow] Letter generated for order ${orderId}`);
-
-  const pdfBuffer = await generatePdf({
-    calledYou: details.calledYou,
-    letterBody,
-    petName: details.petName,
-  });
-  console.log(`[Rainbow] PDF generated for order ${orderId}`);
-
-  await sendRainbowBridgeEmail({
-    toEmail: email,
-    ownerName: details.ownerName,
-    petName: details.petName,
-    pdfBuffer,
-  });
-  console.log(`[Rainbow] Email sent to ${email} for order ${orderId}`);
+  await saveOrderToQueue(order, details);
 }
 
-module.exports = { isRainbowBridgeOrder, processRainbowBridgeOrder };
+module.exports = { isRainbowBridgeOrder, processRainbowBridgeOrder, generateLetter };
