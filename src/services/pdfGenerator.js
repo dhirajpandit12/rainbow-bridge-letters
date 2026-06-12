@@ -28,7 +28,7 @@ function buildSinglePageHtml({ calledYou, paragraphs, petName, bgDataUrl, includ
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n      ');
   const signatureHtml = includeSignature ? `
     <div class="signature-block">
-      <div class="pet-name">${petName} 🐾</div>
+      <div class="pet-name">${petName} <svg width="28" height="28" viewBox="0 0 100 100" style="vertical-align:middle;margin-left:4px;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="80" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="8" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="92" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="50" cy="72" rx="28" ry="24" fill="#2c2420"/></svg></div>
       <div class="forever-text">Forever Loved. Never Gone.</div>
       <div class="forever-line"></div>
     </div>` : '';
@@ -50,7 +50,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 
   const signatureHtml = includeSignature ? `
     <div class="signature-block">
-      <div class="pet-name">${petName} 🐾</div>
+      <div class="pet-name">${petName} <svg width="28" height="28" viewBox="0 0 100 100" style="vertical-align:middle;margin-left:4px;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="80" cy="30" rx="10" ry="14" fill="#2c2420"/><ellipse cx="8" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="92" cy="60" rx="9" ry="12" fill="#2c2420"/><ellipse cx="50" cy="72" rx="28" ry="24" fill="#2c2420"/></svg></div>
       <div class="forever-text">Forever Loved. Never Gone.</div>
       <div class="forever-line"></div>
     </div>` : '';
@@ -61,7 +61,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&family=Noto+Emoji&display=swap" rel="stylesheet"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: ${PAGE_WIDTH}px; height: ${PAGE_HEIGHT}px; overflow: hidden; }
