@@ -12,7 +12,10 @@ async function processQueue() {
     return;
   }
 
-  if (orders.length === 0) return;
+  if (orders.length === 0) {
+    console.log('[Cron] No orders due yet');
+    return;
+  }
 
   console.log(`[Cron] Processing ${orders.length} pending order(s)`);
 
