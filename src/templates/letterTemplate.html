@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 794px;
+      font-family: 'Lato', sans-serif;
+    }
+
+    /* Background repeats on every printed page */
+    html {
+      background-image: url('{{BACKGROUND_IMAGE}}');
+      background-size: 794px 1123px;
+      background-repeat: repeat-y;
+      background-attachment: fixed;
+    }
+
+    body {
+      background: transparent;
+    }
+
+    @page {
+      size: 794px 1123px;
+      margin: 0;
+    }
+
+    .page {
+      width: 794px;
+      min-height: 1123px;
+      position: relative;
+      padding: 320px 52px 140px 52px;
+    }
+
+    .greeting {
+      font-family: 'Dancing Script', cursive;
+      font-size: 28px;
+      font-weight: 600;
+      color: #c47d7d;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+    }
+
+    .greeting-heart {
+      color: #e8a0a0;
+      font-size: 22px;
+      margin-left: 6px;
+    }
+
+    .letter-body {
+      font-family: 'Lato', sans-serif;
+      font-size: 13.2px;
+      font-weight: 300;
+      line-height: 1.85;
+      color: #3a3330;
+      letter-spacing: 0.1px;
+    }
+
+    .letter-body p {
+      margin-bottom: 12px;
+    }
+
+    .signature-block {
+      text-align: right;
+      margin-top: 24px;
+      padding-right: 8px;
+    }
+
+    .pet-name {
+      font-family: 'Dancing Script', cursive;
+      font-size: 34px;
+      font-weight: 700;
+      color: #2c2420;
+      letter-spacing: 0.5px;
+    }
+
+    .forever-text {
+      font-family: 'Lato', sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      color: #c4913a;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .forever-line {
+      width: 90px;
+      height: 1.5px;
+      background: #c47d7d;
+      margin: 5px 0 0 auto;
+      border-radius: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="greeting">Dear {{CALLED_YOU}},<span class="greeting-heart">♥</span></div>
+
+    <div class="letter-body">
+      {{LETTER_BODY}}
+    </div>
+
+    <div class="signature-block">
+      <div class="pet-name">{{PET_NAME}} 🐾</div>
+      <div class="forever-text">Forever Loved. Never Gone.</div>
+      <div class="forever-line"></div>
+    </div>
+  </div>
+</body>
+</html>

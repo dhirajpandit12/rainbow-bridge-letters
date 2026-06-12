@@ -1,0 +1,6 @@
+node_modules/
+.env
+.DS_Store
+test.js
+test-long.js
+test-debug.js
