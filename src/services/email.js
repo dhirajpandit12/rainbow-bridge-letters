@@ -41,6 +41,9 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
               <p style="color:#a08070;font-size:14px;line-height:1.8;margin:24px 0 0 0;font-style:italic;">
                 Forever loved. Never gone. 🌈
               </p>
+              <p style="color:#c0a898;font-size:12px;line-height:1.6;margin:16px 0 0 0;">
+                If this email landed in your Promotions tab, please move it to your inbox so you never miss a letter from a beloved pet.
+              </p>
             </td>
           </tr>
 
