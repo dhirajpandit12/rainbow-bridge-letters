@@ -73,9 +73,21 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
   return response.content[0].text.trim();
 }
 
+function randomDelayMs() {
+  const minHours = 1;
+  const maxHours = 8;
+  const hours = minHours + Math.random() * (maxHours - minHours);
+  return Math.floor(hours * 60 * 60 * 1000);
+}
+
 async function processRainbowBridgeOrder(order) {
   const email = order.email || order.contact_email;
   const orderId = order.id;
+
+  const delayMs = randomDelayMs();
+  const delayHours = (delayMs / 3600000).toFixed(1);
+  console.log(`[Rainbow] Order ${orderId} queued — letter will be sent in ~${delayHours} hours`);
+  await new Promise(resolve => setTimeout(resolve, delayMs));
 
   const lineItem = (order.line_items || []).find(item => {
     const title = (item.title || '').toLowerCase();
