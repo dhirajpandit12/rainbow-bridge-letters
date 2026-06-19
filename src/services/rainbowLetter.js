@@ -113,7 +113,10 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
     messages: [{ role: 'user', content: userMessage }],
   });
 
-  return response.content[0].text.trim();
+  return response.content[0].text
+    .trim()
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1');
 }
 
 async function processRainbowBridgeOrder(order) {
