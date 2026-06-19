@@ -57,9 +57,10 @@ async function processQueue() {
 }
 
 function startQueueCron() {
-  console.log('[Cron] Queue processor started — checking every 15 minutes');
+  const intervalMs = process.env.INSTANT_SEND === 'true' ? 60 * 1000 : 15 * 60 * 1000;
+  console.log(`[Cron] Queue processor started — checking every ${process.env.INSTANT_SEND === 'true' ? '1 minute' : '15 minutes'}`);
   processQueue();
-  setInterval(processQueue, 15 * 60 * 1000);
+  setInterval(processQueue, intervalMs);
 }
 
 module.exports = { startQueueCron };
