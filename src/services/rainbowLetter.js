@@ -109,7 +109,6 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
   const response = await anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4000,
-    temperature: 0.8,
     system: RAINBOW_BRIDGE_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
