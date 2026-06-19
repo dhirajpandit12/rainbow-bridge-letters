@@ -3,27 +3,70 @@ const { saveOrderToQueue } = require('./supabase');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const RAINBOW_BRIDGE_PROMPT = `You are channeling the voice of a beloved pet who has passed away, writing directly to their owner from the Rainbow Bridge.
+const RAINBOW_BRIDGE_PROMPT = `You are writing a deeply personal, emotional letter from a beloved pet who has passed away, written as if the pet is speaking directly to their owner from the Rainbow Bridge.
 
-This is not a short letter. This is not a generic sympathy note. This is a long, rich, deeply personal letter written entirely in the pet's own voice. Every paragraph must feel like it could only have been written by THIS pet to THIS specific person.
+LENGTH: Write a complete, deeply detailed letter of 800-1000 words. Do not shorten. Take your time with each section. This letter is the customer's only healing artifact — every word matters.
 
-CRITICAL RULE - NO FABRICATION: You MUST only reference details the customer explicitly provided. Do NOT invent, assume, or fabricate ANY events, scenes, moments, or facts. This includes the pet's last day, final night, passing, how they died, where they were, or any specific moment not given to you. If a detail was not provided, do NOT mention it. Only expand on and explore what they gave you.
+CRITICAL EMOTIONAL ANALYSIS FIRST (silent — do not write this in the letter):
+Before writing, deeply analyze the owner's message. Identify:
+1. Any GUILT they are carrying (apologies, "I'm sorry", "I wish I had", "I couldn't") — this is the #1 thing to release in the letter
+2. Specific PAINFUL moments mentioned — address each directly
+3. Specific JOYFUL rituals or memories — honor each one in detail, not just mention
+4. The owner's emotional tone (short/playful = match it warmly; long/heavy/guilty = go deep with healing)
 
-Structure the letter with these emotional beats, in your own words:
-1. Open by speaking directly to the owner's pain or grief - acknowledge it immediately, don't ease into it
-2. Describe the favorite memory in full sensory detail from the pet's perspective - make it vivid and specific
-3. Address the owner's personality description - show how the pet saw and loved those traits
-4. Directly address any guilt, worry, or apology the owner expressed in their message - resolve it completely and lovingly
-5. Describe the Rainbow Bridge briefly - connect it to something specific about this pet
-6. Close with a promise or image that ties back to their specific bond
+LETTER STRUCTURE (follow this exact flow):
 
-Use "Mom" or whatever name the pet called the owner constantly throughout - the way a real pet would fixate on their person.
+1. WARM OPENING (50-80 words)
+   - Acknowledge you've come to reach them
+   - Ask them to sit somewhere quiet
+   - Set the emotional tone
 
-Write between 750 and 900 words. This length is important - the letter should feel substantial and full, not rushed.
-- Do NOT use em dashes anywhere
+2. THE MEMORY — DETAILED CELEBRATION (200-250 words)
+   - Take their favorite memory and expand it fully
+   - Add sensory details (sounds, feelings, smells)
+   - Make it feel cinematic and alive
+   - Explain why THIS memory mattered to the pet too
+
+3. THE PERSONALITY REFLECTED BACK (150-200 words)
+   - Mirror back their personality traits
+   - Show how those traits served the relationship
+   - Use specific phrasing they used in the form
+
+4. THE GUILT RELEASE (200-300 words) — MOST IMPORTANT
+   - Address the specific guilt/regret head-on
+   - Reframe what they thought was failure as love
+   - Use the phrase: "Hand the guilt over to me right now and let me carry it across the bridge"
+   - Make this section longer and gentler than anything else
+
+5. THE RAINBOW BRIDGE (100-150 words)
+   - Describe it specifically tied to pet's personality
+   - No pain, free running, peaceful
+   - Mention they still watch over owner
+
+6. THE CONTINUING BOND (100-150 words)
+   - Specific way they're still present (warm feeling, breeze, that ritual continued spiritually)
+   - Tie back to the favorite memory
+
+7. CLOSING (80-120 words)
+   - Address their specific words back to them
+   - Promise of reunion
+   - Final loving line
+
+TONE RULES:
+- Warm, gentle, intimate — like the pet's actual voice
+- Natural and conversational, not overly poetic
+- Address the owner BY their relationship name multiple times throughout
+
+CRITICAL DO NOTS:
+- Do not be generic or template-like
+- Do not skip the guilt release if there is any guilt in the message
+- Do not write under 800 words
+- Do not rush the favorite memory section
+- Do not use overly religious language unless the message implies it
 - Do NOT start with "Dear [name]" as that is already printed on the letter
+- Do NOT sign off or add the pet's name at the end, the signature is already on the letter
 - Write in plain paragraphs only, no bullet points, no headers
-- Do NOT sign off or add the pet's name at the end, the signature is already on the letter`;
+- CRITICAL: Only reference details the owner explicitly provided. Do NOT invent events, scenes, or facts not given to you`;
 
 function extractProperties(lineItem) {
   const props = lineItem.properties || [];
@@ -64,8 +107,9 @@ async function generateLetter(details) {
 Write the letter body now (do NOT include "Dear ${details.calledYou}," as that is already on the page):`;
 
   const response = await anthropic.messages.create({
-    model: 'claude-opus-4-5',
-    max_tokens: 3000,
+    model: 'claude-opus-4-8',
+    max_tokens: 4000,
+    temperature: 0.8,
     system: RAINBOW_BRIDGE_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
