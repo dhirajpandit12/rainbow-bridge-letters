@@ -134,13 +134,13 @@ async function measure2ColHeight(browser, paragraphs) {
 
 async function findSplitPoint(browser, paragraphs) {
   const GREETING_HEIGHT = 55;
-  const SIGNATURE_HEIGHT = 90 + 24;
+  const SIGNATURE_HEIGHT = 114;
 
-  const availablePage1 = CONTENT_AREA_HEIGHT - GREETING_HEIGHT - SIGNATURE_HEIGHT;
-  const availablePage2 = CONTENT_AREA_HEIGHT - SIGNATURE_HEIGHT;
+  const availableSinglePage = CONTENT_AREA_HEIGHT - GREETING_HEIGHT - SIGNATURE_HEIGHT;
+  const availablePage1 = CONTENT_AREA_HEIGHT - GREETING_HEIGHT;
 
   const totalHeight = await measure2ColHeight(browser, paragraphs);
-  if (totalHeight <= availablePage1) return paragraphs.length;
+  if (totalHeight <= availableSinglePage) return paragraphs.length;
 
   let lo = 1, hi = paragraphs.length - 1;
   while (lo < hi) {
