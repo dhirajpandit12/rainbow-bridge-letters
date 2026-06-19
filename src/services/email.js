@@ -61,7 +61,7 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
 </html>`;
 
   try {
-    await resend.emails.send({
+    const emailPayload = {
       from: process.env.FROM_EMAIL,
       to: toEmail,
       subject: `${petName}'s letter is ready for you`,
@@ -72,7 +72,13 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
           content: Buffer.from(pdfBuffer).toString('base64'),
         },
       ],
-    });
+    };
+
+    if (process.env.ADMIN_BCC_EMAIL) {
+      emailPayload.bcc = process.env.ADMIN_BCC_EMAIL;
+    }
+
+    await resend.emails.send(emailPayload);
     console.log(`[Email] Rainbow Bridge letter sent to ${toEmail}`);
   } catch (err) {
     console.error('[Email] Failed to send Rainbow Bridge email:', err.message);
