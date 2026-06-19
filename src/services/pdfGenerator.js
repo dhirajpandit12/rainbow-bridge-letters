@@ -3,7 +3,6 @@ const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
 
-const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'letterTemplate.html');
 const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'rainbow-bridge-bg.png');
 
 const PAGE_HEIGHT = 1123;
@@ -11,6 +10,7 @@ const PAGE_WIDTH = 794;
 const CONTENT_TOP_PADDING = 320;
 const CONTENT_BOTTOM_PADDING = 175;
 const CONTENT_SIDE_PADDING = 52;
+const COLUMN_GAP = 28;
 const CONTENT_AREA_HEIGHT = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING;
 
 function getBgDataUrl() {
@@ -22,24 +22,6 @@ function parseParagraphs(letterBody) {
   return letterBody.split('\n\n').filter(p => p.trim()).map(p => p.trim().replace(/\n/g, ' '));
 }
 
-function buildSinglePageHtml({ calledYou, paragraphs, petName, bgDataUrl, includeSignature }) {
-  let template = fs.readFileSync(TEMPLATE_PATH, 'utf8');
-
-  const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n      ');
-  const signatureHtml = includeSignature ? `
-    <div class="signature-block">
-      <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
-      <div class="forever-text">Forever Loved. Never Gone.</div>
-      <div class="forever-line"></div>
-    </div>` : '';
-
-  return template
-    .replace('{{BACKGROUND_IMAGE}}', bgDataUrl)
-    .replace('{{CALLED_YOU}}', calledYou)
-    .replace(/\{\{LETTER_BODY\}\}[\s\S]*?\{\{PET_NAME\}\}[^<]*🐾<\/div>[\s\S]*?<\/div>[\s\S]*?<\/div>[\s\S]*?<\/div>/, '')
-    .replace('{{LETTER_BODY}}', bodyHtml)
-    .replace(/\s*<div class="signature-block">[\s\S]*?<\/div>\s*<\/div>\s*$/, `${signatureHtml}\n  </div>\n</body>`);
-}
 
 function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature }) {
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n');
@@ -89,6 +71,8 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       font-weight: 400;
       line-height: 1.85;
       color: #1a1210;
+      column-count: 2;
+      column-gap: ${COLUMN_GAP}px;
     }
     .letter-body p { margin-bottom: 12px; }
     .signature-block { text-align: right; margin-top: 24px; padding-right: 8px; }
@@ -109,37 +93,9 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 </html>`;
 }
 
-async function measureContentHeight(browser, paragraphs, isFirstPage) {
-  const bgDataUrl = getBgDataUrl();
-  const html = buildPageHtml({
-    calledYou: 'Test',
-    paragraphs,
-    petName: 'Test',
-    bgDataUrl,
-    isFirstPage,
-    includeSignature: true,
-  });
 
-  const page = await browser.newPage();
-  await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-
-  const height = await page.evaluate(() => {
-    const body = document.querySelector('.letter-body');
-    const sig = document.querySelector('.signature-block');
-    const greeting = document.querySelector('.greeting');
-    let total = 0;
-    if (greeting) total += greeting.offsetHeight + 18;
-    if (body) total += body.offsetHeight;
-    if (sig) total += sig.offsetHeight + 24;
-    return total;
-  });
-
-  await page.close();
-  return height;
-}
-
-async function measureBodyHeight(browser, paragraphs) {
+async function measure2ColHeight(browser, paragraphs) {
+  const contentWidth = PAGE_WIDTH - CONTENT_SIDE_PADDING * 2;
   const measureHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -149,12 +105,14 @@ async function measureBodyHeight(browser, paragraphs) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { width: ${PAGE_WIDTH}px; }
     .measure {
-      width: ${PAGE_WIDTH - CONTENT_SIDE_PADDING * 2}px;
+      width: ${contentWidth}px;
       font-family: 'Lato', sans-serif;
       font-size: 13.2px;
       font-weight: 400;
       line-height: 1.85;
       color: #1a1210;
+      column-count: 2;
+      column-gap: ${COLUMN_GAP}px;
     }
     .measure p { margin-bottom: 12px; }
   </style>
@@ -169,40 +127,29 @@ async function measureBodyHeight(browser, paragraphs) {
   const page = await browser.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
   await page.setContent(measureHtml, { waitUntil: 'networkidle0' });
-  const heights = await page.evaluate(() => {
-    const box = document.getElementById('box');
-    const paras = box.querySelectorAll('p');
-    const result = [];
-    let cumulative = 0;
-    paras.forEach(p => {
-      cumulative += p.offsetHeight + 12;
-      result.push(cumulative);
-    });
-    return result;
-  });
+  const height = await page.evaluate(() => document.getElementById('box').offsetHeight);
   await page.close();
-  return heights;
+  return height;
 }
 
 async function findSplitPoint(browser, paragraphs) {
   const GREETING_HEIGHT = 55;
-  const SIGNATURE_HEIGHT = 90;
+  const SIGNATURE_HEIGHT = 90 + 24;
 
-  const availablePage1 = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING - GREETING_HEIGHT - SIGNATURE_HEIGHT;
-  const availablePage2 = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING - SIGNATURE_HEIGHT;
+  const availablePage1 = CONTENT_AREA_HEIGHT - GREETING_HEIGHT - SIGNATURE_HEIGHT;
+  const availablePage2 = CONTENT_AREA_HEIGHT - SIGNATURE_HEIGHT;
 
-  const cumulativeHeights = await measureBodyHeight(browser, paragraphs);
-  const totalHeight = cumulativeHeights[cumulativeHeights.length - 1] || 0;
-
+  const totalHeight = await measure2ColHeight(browser, paragraphs);
   if (totalHeight <= availablePage1) return paragraphs.length;
 
-  for (let i = 0; i < cumulativeHeights.length; i++) {
-    if (cumulativeHeights[i] > availablePage1) {
-      return Math.max(1, i);
-    }
+  let lo = 1, hi = paragraphs.length - 1;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    const h = await measure2ColHeight(browser, paragraphs.slice(0, mid));
+    if (h <= availablePage1) lo = mid;
+    else hi = mid - 1;
   }
-
-  return Math.floor(paragraphs.length / 2);
+  return lo;
 }
 
 async function generatePdf({ calledYou, letterBody, petName }) {
