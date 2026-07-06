@@ -92,14 +92,14 @@ function extractSoulReadingProperties(lineItem) {
   };
 
   return {
-    petName: get("Pet's Name"),
+    petName: get('Pet Name'),
     ownerName: get('Your Name'),
-    petCallsYou: get('Your Pet Calls You'),
-    photoUrl: get("Upload Pet's Photo"),
+    petCallsYou: get('Pet Calls You'),
+    photoUrl: get('Pet Photo'),
     species: get('Species'),
     lifeStage: get('Life Stage'),
-    personality: get('Their Personality'),
-    question: get('One Question For Your Pet'),
+    personality: get('Personality'),
+    question: get('Their Question'),
   };
 }
 
