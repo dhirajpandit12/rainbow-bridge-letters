@@ -22,7 +22,8 @@ RULES:
 - Paragraph 5 starts with "${petCallsYou}." on its own line
 - Paragraph 5 ends with one single unforgettable closing line in italics (wrap in *like this*)
 - Never use: journey, resonate, vibration, universe has a plan
-- Each paragraph 130-170 words
+- Paragraphs 1-4: 130-170 words each
+- Paragraph 5: 250-300 words (longer — this is the emotional peak of the reading)
 
 FORMAT exactly — nothing else:
 
