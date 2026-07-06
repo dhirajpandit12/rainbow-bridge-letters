@@ -48,6 +48,15 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
           </tr>
 
           <tr>
+            <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
+              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">For the pets still with you</p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">Do you have another pet at home? Discover what they are truly feeling right now with a <strong>Pet Soul Reading</strong>.</p>
+              <a href="https://www.healyourinnerpeace.com/products/pet-soul-reading" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Get a Soul Reading</a>
+              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">Use code <strong style="color:#c47d7d;">PETSOUL10</strong> for 10% off.</p>
+            </td>
+          </tr>
+
+          <tr>
             <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
               <p style="color:#c47d7d;font-size:15px;margin:0;font-family:Georgia,serif;">Rainbow Bridge Letters</p>
             </td>
