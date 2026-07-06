@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { isRainbowBridgeOrder, processRainbowBridgeOrder } = require('../services/rainbowLetter');
+const { isSoulReadingOrder, processSoulReadingOrder } = require('../services/soulReading');
 
 const router = express.Router();
 
@@ -45,16 +46,19 @@ router.post('/', async (req, res) => {
     return res.status(200).send('OK');
   }
 
-  if (!isRainbowBridgeOrder(order)) {
-    console.log(`[Webhook] Not a Rainbow Bridge order — skipping`);
-    return res.status(200).send('OK');
+  if (isRainbowBridgeOrder(order)) {
+    console.log(`[Webhook] Rainbow Bridge order received for ${email}`);
+    processRainbowBridgeOrder(order).catch(err => {
+      console.error(`[Rainbow] Processing failed for ${email}:`, err.message);
+    });
+  } else if (isSoulReadingOrder(order)) {
+    console.log(`[Webhook] Soul Reading order received for ${email}`);
+    processSoulReadingOrder(order).catch(err => {
+      console.error(`[SoulReading] Processing failed for ${email}:`, err.message);
+    });
+  } else {
+    console.log(`[Webhook] Unknown product — skipping`);
   }
-
-  console.log(`[Webhook] Rainbow Bridge order received for ${email}`);
-
-  processRainbowBridgeOrder(order).catch(err => {
-    console.error(`[Rainbow] Processing failed for ${email}:`, err.message);
-  });
 
   return res.status(200).send('OK');
 });
