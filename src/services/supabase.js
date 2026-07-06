@@ -33,12 +33,21 @@ async function getPendingOrders() {
   const { data, error } = await supabase
     .from('rainbow_orders')
     .select('*')
-    .eq('status', 'pending')
+    .in('status', ['pending'])
     .lte('send_after', new Date().toISOString())
     .limit(10);
 
   if (error) throw new Error(`Supabase fetch failed: ${error.message}`);
   return data || [];
+}
+
+async function markOrderProcessing(id) {
+  const { error } = await supabase
+    .from('rainbow_orders')
+    .update({ status: 'processing' })
+    .eq('id', id);
+
+  if (error) throw new Error(`Supabase update failed: ${error.message}`);
 }
 
 async function markOrderProcessed(id) {
@@ -88,12 +97,21 @@ async function getPendingSoulReadings() {
   const { data, error } = await supabase
     .from('soul_reading_orders')
     .select('*')
-    .eq('status', 'pending')
+    .in('status', ['pending'])
     .lte('send_after', new Date().toISOString())
     .limit(10);
 
   if (error) throw new Error(`Supabase fetch failed: ${error.message}`);
   return data || [];
+}
+
+async function markSoulReadingProcessing(id) {
+  const { error } = await supabase
+    .from('soul_reading_orders')
+    .update({ status: 'processing' })
+    .eq('id', id);
+
+  if (error) throw new Error(`Supabase update failed: ${error.message}`);
 }
 
 async function markSoulReadingProcessed(id) {
@@ -115,6 +133,6 @@ async function markSoulReadingFailed(id, reason) {
 }
 
 module.exports = {
-  saveOrderToQueue, getPendingOrders, markOrderProcessed, markOrderFailed,
-  saveSoulReadingToQueue, getPendingSoulReadings, markSoulReadingProcessed, markSoulReadingFailed,
+  saveOrderToQueue, getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed,
+  saveSoulReadingToQueue, getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed,
 };

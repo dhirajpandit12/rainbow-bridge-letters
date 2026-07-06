@@ -1,6 +1,6 @@
 const {
-  getPendingOrders, markOrderProcessed, markOrderFailed,
-  getPendingSoulReadings, markSoulReadingProcessed, markSoulReadingFailed,
+  getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed,
+  getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed,
 } = require('../services/supabase');
 const { generateLetter } = require('../services/rainbowLetter');
 const { generatePdf } = require('../services/pdfGenerator');
@@ -29,6 +29,7 @@ async function processRainbowOrders() {
         messageToPet: order.message_to_pet,
       };
 
+      await markOrderProcessing(order.id);
       console.log(`[Cron] Generating Rainbow letter for ${details.petName} (order ${order.shopify_order_id})`);
       const letterBody = await generateLetter(details);
       const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
@@ -64,6 +65,7 @@ async function processSoulReadingOrders() {
         question: order.question,
       };
 
+      await markSoulReadingProcessing(order.id);
       console.log(`[Cron] Generating Soul Reading for ${details.petName} (order ${order.shopify_order_id})`);
       const paragraphs = await generateSoulReading(details);
       const pdfBuffer = await generateSoulReadingPdf({ calledYou: details.petCallsYou, petName: details.petName, paragraphs, photoUrl: details.photoUrl });
