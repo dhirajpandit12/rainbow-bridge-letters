@@ -164,35 +164,20 @@ async function generatePdf({ calledYou, letterBody, petName }) {
   });
 
   try {
-    const splitAt = await findSplitPoint(browser, paragraphs);
-    const needsTwoPages = splitAt < paragraphs.length;
-
     const pdfBuffers = [];
+    let remaining = [...paragraphs];
+    let isFirstPage = true;
 
-    if (!needsTwoPages) {
+    while (remaining.length > 0) {
+      const isLastPage = remaining.length <= await findSplitPoint(browser, remaining);
+      const splitAt = isLastPage ? remaining.length : await findSplitPoint(browser, remaining);
+      const pageParas = remaining.slice(0, splitAt);
+      remaining = remaining.slice(splitAt);
+      const isActuallyLast = remaining.length === 0;
+
       const html = buildPageHtml({
-        calledYou, paragraphs, petName, bgDataUrl,
-        isFirstPage: true, includeSignature: true,
-      });
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      const pdf = await page.pdf({
-        width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
-        printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      });
-      await page.close();
-      return pdf;
-    }
-
-    const page1Paras = paragraphs.slice(0, splitAt);
-    const page2Paras = paragraphs.slice(splitAt);
-
-    for (let i = 0; i < 2; i++) {
-      const isFirst = i === 0;
-      const paras = isFirst ? page1Paras : page2Paras;
-      const html = buildPageHtml({
-        calledYou, paragraphs: paras, petName, bgDataUrl,
-        isFirstPage: isFirst, includeSignature: !isFirst,
+        calledYou, paragraphs: pageParas, petName, bgDataUrl,
+        isFirstPage, includeSignature: isActuallyLast,
       });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -202,9 +187,10 @@ async function generatePdf({ calledYou, letterBody, petName }) {
       });
       await page.close();
       pdfBuffers.push(pdf);
+      isFirstPage = false;
     }
 
-    return await mergePdfs(pdfBuffers);
+    return pdfBuffers.length === 1 ? pdfBuffers[0] : await mergePdfs(pdfBuffers);
   } finally {
     await browser.close();
   }
