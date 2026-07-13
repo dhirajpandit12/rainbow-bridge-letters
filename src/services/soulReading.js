@@ -36,8 +36,8 @@ RULES:
 - Write like a real person, not a psychic cliche
 
 LENGTHS:
-- Paragraphs 1-4: 200-250 words each
-- Paragraph 5: 280-320 words
+- Paragraphs 1-4: 140-160 words each (keep them tight and punchy — no filler)
+- Paragraph 5: 220-260 words (emotional peak, give it space)
 
 FORMAT exactly — nothing else:
 
