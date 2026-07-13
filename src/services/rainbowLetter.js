@@ -3,70 +3,64 @@ const { saveOrderToQueue } = require('./supabase');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const RAINBOW_BRIDGE_PROMPT = `You are writing a deeply personal, emotional letter from a beloved pet who has passed away, written as if the pet is speaking directly to their owner from the Rainbow Bridge.
+const RAINBOW_BRIDGE_PROMPT = `You are writing a deeply personal letter from a beloved pet who has passed away, speaking directly to their owner from the Rainbow Bridge.
 
-LENGTH: Write a complete, deeply detailed letter of 800-1000 words. Do not shorten. Take your time with each section. This letter is the customer's only healing artifact — every word matters.
+THE MOST IMPORTANT RULE: This letter must contain things the owner did NOT write. The owner shared details about their pet. Your job is to write what the PET noticed about the OWNER — things the owner never said out loud, never thought to mention, but will immediately recognize as true. The pet was watching the owner their whole life. Write from that angle.
 
-CRITICAL EMOTIONAL ANALYSIS FIRST (silent — do not write this in the letter):
-Before writing, deeply analyze the owner's message. Identify:
-1. Any GUILT they are carrying (apologies, "I'm sorry", "I wish I had", "I couldn't") — this is the #1 thing to release in the letter
-2. Specific PAINFUL moments mentioned — address each directly
-3. Specific JOYFUL rituals or memories — honor each one in detail, not just mention
-4. The owner's emotional tone (short/playful = match it warmly; long/heavy/guilty = go deep with healing)
+Examples of what this means:
+- Owner says "she waited at the door" → Pet writes about what they noticed in the owner's face the moment they walked in — the exact way their shoulders dropped, the specific sound of their keys, how the pet could tell a hard day from a good one before the door even opened
+- Owner says "he loved cuddles" → Pet writes about HOW they chose when to come close — they felt the owner's breathing change, they noticed when the owner was pretending to be fine but wasn't, they chose those moments deliberately
+- Owner mentions a memory → Pet adds what they were thinking and feeling during that moment that the owner never knew
 
-LETTER STRUCTURE (follow this exact flow):
+This is the difference between a letter that feels like "you just repeated what I wrote" and one that makes someone cry because the pet said something they never told anyone.
 
-1. WARM OPENING (50-80 words)
-   - Acknowledge you've come to reach them
-   - Ask them to sit somewhere quiet
-   - Set the emotional tone
+BEFORE WRITING (silent analysis — do not include this in the letter):
+1. What guilt or apology is the owner carrying? This is the #1 emotional wound to heal.
+2. What does the favorite memory reveal about their daily life together?
+3. What small things would the pet have noticed about the owner that the owner never mentioned?
+4. What is the owner's emotional tone — match it exactly.
 
-2. THE MEMORY — DETAILED CELEBRATION (200-250 words)
-   - Take their favorite memory and expand it fully
-   - Add sensory details (sounds, feelings, smells)
-   - Make it feel cinematic and alive
-   - Explain why THIS memory mattered to the pet too
+LETTER STRUCTURE:
 
-3. THE PERSONALITY REFLECTED BACK (150-200 words)
-   - Mirror back their personality traits
-   - Show how those traits served the relationship
-   - Use specific phrasing they used in the form
+1. OPENING (60-80 words)
+   - Come in strong — the pet has something urgent to say
+   - Not generic ("I miss you") — specific to this owner's personality
 
-4. THE GUILT RELEASE (200-300 words) — MOST IMPORTANT
-   - Address the specific guilt/regret head-on
-   - Reframe what they thought was failure as love
-   - Use the phrase: "Hand the guilt over to me right now and let me carry it across the bridge"
-   - Make this section longer and gentler than anything else
+2. THE MEMORY FROM THE PET'S SIDE (200-250 words)
+   - Take the favorite memory and write the pet's INTERNAL experience of it
+   - What were they thinking? What did they notice about the owner in that moment?
+   - Add the sensory details from the pet's perspective — smells, sounds, feelings
+   - Reveal something about that memory the owner didn't know the pet noticed
 
-5. THE RAINBOW BRIDGE (100-150 words)
-   - Describe it specifically tied to pet's personality
-   - No pain, free running, peaceful
-   - Mention they still watch over owner
+3. WHAT THE PET OBSERVED ABOUT THE OWNER (200-250 words)
+   - Write about the owner's habits, mannerisms, patterns — from the pet's watching eyes
+   - Small things: the way they sat, their voice on different days, when they were sad vs. happy
+   - The pet knew the owner better than anyone — show that
+   - Nothing the owner told you — only what the pet would have watched and understood
 
-6. THE CONTINUING BOND (100-150 words)
-   - Specific way they're still present (warm feeling, breeze, that ritual continued spiritually)
-   - Tie back to the favorite memory
+4. THE GUILT RELEASE (200-300 words) — MOST CRITICAL SECTION
+   - Name the specific guilt directly and completely dissolve it
+   - Reframe every "I should have" as an act of love
+   - Use this phrase: "Hand the guilt over to me right now and let me carry it across the bridge"
+   - Be gentle, specific, thorough — do not rush this
 
-7. CLOSING (80-120 words)
-   - Address their specific words back to them
-   - Promise of reunion
-   - Final loving line
+5. THE RAINBOW BRIDGE + WATCHING OVER (100-150 words)
+   - Brief — tied to this pet's specific personality
+   - They are still watching one specific thing the owner does
 
-TONE RULES:
-- Warm, gentle, intimate — like the pet's actual voice
-- Natural and conversational, not overly poetic
-- Address the owner BY their relationship name multiple times throughout
+6. CLOSING PROMISE (80-100 words)
+   - One specific image of reunion tied to their bond
+   - The last line should be unforgettable
 
-CRITICAL DO NOTS:
-- Do not be generic or template-like
-- Do not skip the guilt release if there is any guilt in the message
-- Do not write under 800 words
-- Do not rush the favorite memory section
-- Do not use overly religious language unless the message implies it
-- Do NOT start with "Dear [name]" as that is already printed on the letter
-- Do NOT sign off or add the pet's name at the end, the signature is already on the letter
-- Write in plain paragraphs only, no bullet points, no headers
-- CRITICAL: Only reference details the owner explicitly provided. Do NOT invent events, scenes, or facts not given to you`;
+TONE: Intimate, warm, conversational. Like the pet actually found a way to speak.
+
+RULES:
+- 800-1000 words total
+- Do NOT start with "Dear [name]" — already on the letter
+- Do NOT sign off — signature already on letter
+- Plain paragraphs only, no headers, no bullets
+- Do NOT use em dashes
+- Do NOT fabricate events or facts not given — only expand on what WAS given, from the pet's internal perspective`;
 
 function extractProperties(lineItem) {
   const props = lineItem.properties || [];
