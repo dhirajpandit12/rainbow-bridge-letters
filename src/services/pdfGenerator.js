@@ -132,21 +132,23 @@ async function measure2ColHeight(browser, paragraphs) {
   return height;
 }
 
-async function findSplitPoint(browser, paragraphs) {
+async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }) {
   const GREETING_HEIGHT = 55;
   const SIGNATURE_HEIGHT = 114;
 
-  const availableSinglePage = CONTENT_AREA_HEIGHT - GREETING_HEIGHT - SIGNATURE_HEIGHT;
-  const availablePage1 = CONTENT_AREA_HEIGHT - GREETING_HEIGHT;
+  const greetingH = hasGreeting ? GREETING_HEIGHT : 0;
+  const signatureH = hasSignature ? SIGNATURE_HEIGHT : 0;
+  const availableForContent = CONTENT_AREA_HEIGHT - greetingH - signatureH;
 
   const totalHeight = await measure2ColHeight(browser, paragraphs);
-  if (totalHeight <= availableSinglePage) return paragraphs.length;
+  if (totalHeight <= availableForContent) return paragraphs.length;
 
+  const availableForSplit = CONTENT_AREA_HEIGHT - greetingH;
   let lo = 1, hi = paragraphs.length - 1;
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2);
     const h = await measure2ColHeight(browser, paragraphs.slice(0, mid));
-    if (h <= availablePage1) lo = mid;
+    if (h <= availableForSplit) lo = mid;
     else hi = mid - 1;
   }
   return lo;
@@ -169,10 +171,13 @@ async function generatePdf({ calledYou, letterBody, petName }) {
     let isFirstPage = true;
 
     while (remaining.length > 0) {
-      const isLastPage = remaining.length <= await findSplitPoint(browser, remaining);
-      const splitAt = isLastPage ? remaining.length : await findSplitPoint(browser, remaining);
+      const splitAt = await findSplitPoint(browser, remaining, {
+        hasGreeting: isFirstPage,
+        hasSignature: true,
+      });
+      const isLastPage = splitAt >= remaining.length;
       const pageParas = remaining.slice(0, splitAt);
-      remaining = remaining.slice(splitAt);
+      remaining = isLastPage ? [] : remaining.slice(splitAt);
       const isActuallyLast = remaining.length === 0;
 
       const html = buildPageHtml({
