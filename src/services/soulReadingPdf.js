@@ -42,14 +42,19 @@ function stripMarkdown(text) {
   return text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
 }
 
-function parsePara5Html(raw) {
+function parsePara5Html(raw, petCallsYou, petName) {
   const lines = raw.split('\n');
   const lastLine = lines[lines.length - 1];
   const isItalic = lastLine.startsWith('*') && lastLine.endsWith('*');
   const bodyLines = isItalic ? lines.slice(0, -1) : lines;
   const italicLine = isItalic ? `<em>${lastLine.replace(/\*/g, '')}</em>` : '';
-  return bodyLines.map(l => l.trim() ? `<p class="para">${stripMarkdown(l)}</p>` : '').join('')
+  const bodyHtml = bodyLines.map(l => l.trim() ? `<p class="para">${stripMarkdown(l)}</p>` : '').join('')
     + (italicLine ? `<p class="para italic">${italicLine}</p>` : '');
+
+  return `<div class="divider">─────── ✦ ───────</div>
+<div class="pet-greeting">Dear ${petCallsYou},</div>
+${bodyHtml}
+<div class="pet-signoff">${petName} 🐾</div>`;
 }
 
 const SHARED_STYLES = `
@@ -81,6 +86,9 @@ const SHARED_STYLES = `
     margin-bottom: 16px; break-inside: avoid;
   }
   .para.italic { font-style: italic; color: #8b5e52; }
+  .divider { text-align: center; color: #c47d7d; font-size: 13px; letter-spacing: 4px; margin: 18px 0 14px 0; break-inside: avoid; break-after: avoid; }
+  .pet-greeting { font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 600; color: #c47d7d; margin-bottom: 12px; break-inside: avoid; break-after: avoid; }
+  .pet-signoff { font-family: 'Dancing Script', cursive; font-size: 20px; font-weight: 600; color: #2c2420; margin-top: 14px; break-inside: avoid; }
   .sig-block { margin-top: 20px; text-align: center; break-inside: avoid; }
   .photo-circle {
     width: 120px; height: 120px; border-radius: 50%; overflow: hidden;
@@ -190,7 +198,7 @@ async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl
   }
 
   const { PARA_ONE, PARA_TWO, PARA_THREE, PARA_FOUR, PARA_FIVE } = paragraphs;
-  const para5Html = parsePara5Html(PARA_FIVE || '');
+  const para5Html = parsePara5Html(PARA_FIVE || '', calledYou, petName);
 
   const allParaTexts = [
     stripMarkdown(PARA_ONE),
