@@ -126,7 +126,7 @@ async function measure2ColHeight(browser, paragraphs) {
 
   const page = await browser.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
-  await page.setContent(measureHtml, { waitUntil: 'networkidle0' });
+  await page.setContent(measureHtml, { waitUntil: 'networkidle2', timeout: 90000 });
   const height = await page.evaluate(() => document.getElementById('box').offsetHeight);
   await page.close();
   return height;
@@ -180,7 +180,7 @@ async function generatePdf({ calledYou, letterBody, petName }) {
         isFirstPage, includeSignature: isActuallyLast,
       });
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'networkidle2', timeout: 90000 });
       const pdf = await page.pdf({
         width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
         printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },

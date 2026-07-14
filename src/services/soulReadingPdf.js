@@ -40,7 +40,7 @@ function stripMarkdown(text) {
   return text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
 }
 
-const FONT_LINK = `<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>`;
+const FONT_LINK = `<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&display=swap" rel="stylesheet" crossorigin="anonymous"/>`;
 
 const BASE_STYLES = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -198,7 +198,7 @@ async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl
     const pdfBuffers = [];
 
     const page1 = await browser.newPage();
-    await page1.setContent(buildPage1Html({ bgDataUrl, paragraphs }), { waitUntil: 'networkidle0', timeout: 60000 });
+    await page1.setContent(buildPage1Html({ bgDataUrl, paragraphs }), { waitUntil: 'networkidle2', timeout: 90000 });
     pdfBuffers.push(await page1.pdf({
       width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
       printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -206,7 +206,7 @@ async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl
     await page1.close();
 
     const page2 = await browser.newPage();
-    await page2.setContent(buildPage2Html({ bgDataUrl, petCallsYou: calledYou, petName, paragraphs, photoDataUrl }), { waitUntil: 'networkidle0', timeout: 60000 });
+    await page2.setContent(buildPage2Html({ bgDataUrl, petCallsYou: calledYou, petName, paragraphs, photoDataUrl }), { waitUntil: 'networkidle2', timeout: 90000 });
     pdfBuffers.push(await page2.pdf({
       width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
       printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
