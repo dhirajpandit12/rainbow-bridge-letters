@@ -12,7 +12,6 @@ const CONTENT_TOP_PADDING = 320;
 const CONTENT_BOTTOM_PADDING = 175;
 const CONTENT_SIDE_PADDING = 52;
 const COLUMN_GAP = 28;
-const CONTENT_AREA_HEIGHT = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING;
 
 function getBgDataUrl() {
   const bgImageBase64 = fs.readFileSync(BG_IMAGE_PATH).toString('base64');
@@ -23,6 +22,20 @@ function parseParagraphs(letterBody) {
   return letterBody.split('\n\n').filter(p => p.trim()).map(p => p.trim().replace(/\n/g, ' '));
 }
 
+function splitParagraphsByWordCount(paragraphs) {
+  const totalWords = paragraphs.reduce((sum, p) => sum + p.split(' ').length, 0);
+  const target = Math.floor(totalWords / 2);
+  let count = 0;
+  let splitIdx = Math.floor(paragraphs.length / 2);
+  for (let i = 0; i < paragraphs.length - 1; i++) {
+    count += paragraphs[i].split(' ').length;
+    if (count >= target) {
+      splitIdx = i + 1;
+      break;
+    }
+  }
+  return [paragraphs.slice(0, splitIdx), paragraphs.slice(splitIdx)];
+}
 
 function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss }) {
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n');
@@ -38,8 +51,6 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       <div class="forever-line"></div>
     </div>` : '';
 
-  const bgDataUrl64 = bgDataUrl;
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,7 +63,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       width: ${PAGE_WIDTH}px;
       height: ${PAGE_HEIGHT}px;
       position: relative;
-      background-image: url('${bgDataUrl64}');
+      background-image: url('${bgDataUrl}');
       background-size: cover;
       background-position: center;
       padding: ${CONTENT_TOP_PADDING}px ${CONTENT_SIDE_PADDING}px ${CONTENT_BOTTOM_PADDING}px ${CONTENT_SIDE_PADDING}px;
@@ -60,20 +71,13 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
     }
     .greeting {
       font-family: 'Dancing Script', cursive;
-      font-size: 28px;
-      font-weight: 600;
-      color: #c47d7d;
-      margin-bottom: 18px;
+      font-size: 28px; font-weight: 600; color: #c47d7d; margin-bottom: 18px;
     }
     .greeting-heart { color: #e8a0a0; font-size: 22px; margin-left: 6px; }
     .letter-body {
       font-family: 'Lato', sans-serif;
-      font-size: 13.2px;
-      font-weight: 400;
-      line-height: 1.85;
-      color: #1a1210;
-      column-count: 2;
-      column-gap: ${COLUMN_GAP}px;
+      font-size: 13.2px; font-weight: 400; line-height: 1.85; color: #1a1210;
+      column-count: 2; column-gap: ${COLUMN_GAP}px;
     }
     .letter-body p { margin-bottom: 12px; }
     .signature-block { text-align: right; margin-top: 24px; padding-right: 8px; }
@@ -94,72 +98,23 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 </html>`;
 }
 
-
-async function measure2ColHeight(browser, paragraphs, fontCss) {
-  const contentWidth = PAGE_WIDTH - CONTENT_SIDE_PADDING * 2;
-  const measureHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  ${fontCss}
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { width: ${PAGE_WIDTH}px; }
-    .measure {
-      width: ${contentWidth}px;
-      font-family: 'Lato', sans-serif;
-      font-size: 13.2px;
-      font-weight: 400;
-      line-height: 1.85;
-      color: #1a1210;
-      column-count: 2;
-      column-gap: ${COLUMN_GAP}px;
-    }
-    .measure p { margin-bottom: 12px; }
-  </style>
-</head>
-<body>
-  <div class="measure" id="box">
-    ${paragraphs.map(p => `<p>${p}</p>`).join('\n')}
-  </div>
-</body>
-</html>`;
-
-  const page = await browser.newPage();
-  await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
-  await page.setContent(measureHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.evaluate(() => document.fonts.ready);
-  const height = await page.evaluate(() => document.getElementById('box').offsetHeight);
-  await page.close();
-  return height;
-}
-
-async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }, fontCss) {
-  const GREETING_HEIGHT = 55;
-  const SIGNATURE_HEIGHT = 114;
-
-  const greetingH = hasGreeting ? GREETING_HEIGHT : 0;
-  const signatureH = hasSignature ? SIGNATURE_HEIGHT : 0;
-  const availableForContent = CONTENT_AREA_HEIGHT - greetingH - signatureH;
-
-  const totalHeight = await measure2ColHeight(browser, paragraphs, fontCss);
-  if (totalHeight <= availableForContent) return paragraphs.length;
-
-  const availableForSplit = CONTENT_AREA_HEIGHT - greetingH;
-  let lo = 1, hi = paragraphs.length - 1;
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi + 1) / 2);
-    const h = await measure2ColHeight(browser, paragraphs.slice(0, mid), fontCss);
-    if (h <= availableForSplit) lo = mid;
-    else hi = mid - 1;
+async function mergePdfs(buffers) {
+  const { PDFDocument } = require('pdf-lib');
+  const merged = await PDFDocument.create();
+  for (const buffer of buffers) {
+    const doc = await PDFDocument.load(buffer);
+    const pages = await merged.copyPages(doc, doc.getPageIndices());
+    pages.forEach(p => merged.addPage(p));
   }
-  return lo;
+  const mergedBytes = await merged.save();
+  return Buffer.from(mergedBytes);
 }
 
 async function generatePdf({ calledYou, letterBody, petName }) {
   const bgDataUrl = getBgDataUrl();
   const fontCss = await getInlineFontCss();
   const paragraphs = parseParagraphs(letterBody);
+  const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs);
 
   const browser = await puppeteer.launch({
     args: chromium.args,
@@ -170,53 +125,35 @@ async function generatePdf({ calledYou, letterBody, petName }) {
 
   try {
     const pdfBuffers = [];
-    let remaining = [...paragraphs];
-    let isFirstPage = true;
 
-    while (remaining.length > 0) {
-      const splitAt = await findSplitPoint(browser, remaining, {
-        hasGreeting: isFirstPage,
-        hasSignature: true,
-      }, fontCss);
-      const isLastPage = splitAt >= remaining.length;
-      const pageParas = remaining.slice(0, splitAt);
-      remaining = isLastPage ? [] : remaining.slice(splitAt);
-      const isActuallyLast = remaining.length === 0;
+    const pg1 = await browser.newPage();
+    await pg1.setContent(buildPageHtml({
+      calledYou, paragraphs: page1Paras, petName, bgDataUrl,
+      isFirstPage: true, includeSignature: false, fontCss,
+    }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await pg1.evaluate(() => document.fonts.ready);
+    pdfBuffers.push(await pg1.pdf({
+      width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
+      printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    }));
+    await pg1.close();
 
-      const html = buildPageHtml({
-        calledYou, paragraphs: pageParas, petName, bgDataUrl,
-        isFirstPage, includeSignature: isActuallyLast, fontCss,
-      });
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.evaluate(() => document.fonts.ready);
-      const pdf = await page.pdf({
-        width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
-        printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      });
-      await page.close();
-      pdfBuffers.push(pdf);
-      isFirstPage = false;
-    }
+    const pg2 = await browser.newPage();
+    await pg2.setContent(buildPageHtml({
+      calledYou, paragraphs: page2Paras, petName, bgDataUrl,
+      isFirstPage: false, includeSignature: true, fontCss,
+    }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await pg2.evaluate(() => document.fonts.ready);
+    pdfBuffers.push(await pg2.pdf({
+      width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
+      printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    }));
+    await pg2.close();
 
-    return pdfBuffers.length === 1 ? pdfBuffers[0] : await mergePdfs(pdfBuffers);
+    return await mergePdfs(pdfBuffers);
   } finally {
     await browser.close();
   }
-}
-
-async function mergePdfs(buffers) {
-  const { PDFDocument } = require('pdf-lib');
-  const merged = await PDFDocument.create();
-
-  for (const buffer of buffers) {
-    const doc = await PDFDocument.load(buffer);
-    const pages = await merged.copyPages(doc, doc.getPageIndices());
-    pages.forEach(p => merged.addPage(p));
-  }
-
-  const mergedBytes = await merged.save();
-  return Buffer.from(mergedBytes);
 }
 
 module.exports = { generatePdf };
