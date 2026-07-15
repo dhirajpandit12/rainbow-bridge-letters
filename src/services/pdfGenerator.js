@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+const { getInlineFontCss } = require('./fonts');
 
 const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'rainbow-bridge-bg.png');
 
@@ -23,7 +24,7 @@ function parseParagraphs(letterBody) {
 }
 
 
-function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature }) {
+function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss }) {
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n');
 
   const greetingHtml = isFirstPage
@@ -43,7 +44,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&family=Noto+Emoji&display=swap" rel="stylesheet"/>
+  ${fontCss}
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: ${PAGE_WIDTH}px; height: ${PAGE_HEIGHT}px; overflow: hidden; }
@@ -94,13 +95,13 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 }
 
 
-async function measure2ColHeight(browser, paragraphs) {
+async function measure2ColHeight(browser, paragraphs, fontCss) {
   const contentWidth = PAGE_WIDTH - CONTENT_SIDE_PADDING * 2;
   const measureHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8"/>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400&display=swap" rel="stylesheet"/>
+  ${fontCss}
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { width: ${PAGE_WIDTH}px; }
@@ -126,13 +127,14 @@ async function measure2ColHeight(browser, paragraphs) {
 
   const page = await browser.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
-  await page.setContent(measureHtml, { waitUntil: 'networkidle2', timeout: 90000 });
+  await page.setContent(measureHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.evaluate(() => document.fonts.ready);
   const height = await page.evaluate(() => document.getElementById('box').offsetHeight);
   await page.close();
   return height;
 }
 
-async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }) {
+async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }, fontCss) {
   const GREETING_HEIGHT = 55;
   const SIGNATURE_HEIGHT = 114;
 
@@ -140,14 +142,14 @@ async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }
   const signatureH = hasSignature ? SIGNATURE_HEIGHT : 0;
   const availableForContent = CONTENT_AREA_HEIGHT - greetingH - signatureH;
 
-  const totalHeight = await measure2ColHeight(browser, paragraphs);
+  const totalHeight = await measure2ColHeight(browser, paragraphs, fontCss);
   if (totalHeight <= availableForContent) return paragraphs.length;
 
   const availableForSplit = CONTENT_AREA_HEIGHT - greetingH;
   let lo = 1, hi = paragraphs.length - 1;
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2);
-    const h = await measure2ColHeight(browser, paragraphs.slice(0, mid));
+    const h = await measure2ColHeight(browser, paragraphs.slice(0, mid), fontCss);
     if (h <= availableForSplit) lo = mid;
     else hi = mid - 1;
   }
@@ -156,6 +158,7 @@ async function findSplitPoint(browser, paragraphs, { hasGreeting, hasSignature }
 
 async function generatePdf({ calledYou, letterBody, petName }) {
   const bgDataUrl = getBgDataUrl();
+  const fontCss = await getInlineFontCss();
   const paragraphs = parseParagraphs(letterBody);
 
   const browser = await puppeteer.launch({
@@ -174,7 +177,7 @@ async function generatePdf({ calledYou, letterBody, petName }) {
       const splitAt = await findSplitPoint(browser, remaining, {
         hasGreeting: isFirstPage,
         hasSignature: true,
-      });
+      }, fontCss);
       const isLastPage = splitAt >= remaining.length;
       const pageParas = remaining.slice(0, splitAt);
       remaining = isLastPage ? [] : remaining.slice(splitAt);
@@ -182,10 +185,11 @@ async function generatePdf({ calledYou, letterBody, petName }) {
 
       const html = buildPageHtml({
         calledYou, paragraphs: pageParas, petName, bgDataUrl,
-        isFirstPage, includeSignature: isActuallyLast,
+        isFirstPage, includeSignature: isActuallyLast, fontCss,
       });
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle2', timeout: 90000 });
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.evaluate(() => document.fonts.ready);
       const pdf = await page.pdf({
         width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
         printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },

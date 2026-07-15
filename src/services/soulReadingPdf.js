@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const { getInlineFontCss } = require('./fonts');
 
 const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'soul-reading-bg.png');
 
@@ -42,7 +43,6 @@ function stripMarkdown(text) {
   return text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
 }
 
-const FONT_LINK = `<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Lato:wght@300;400&display=swap" rel="stylesheet" crossorigin="anonymous"/>`;
 
 const PAW_SVG = `<svg style="display:inline-block;width:20px;height:20px;vertical-align:middle;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="28" rx="11" ry="15" fill="#2c2420"/><ellipse cx="80" cy="28" rx="11" ry="15" fill="#2c2420"/><ellipse cx="6" cy="58" rx="9" ry="13" fill="#2c2420"/><ellipse cx="94" cy="58" rx="9" ry="13" fill="#2c2420"/><ellipse cx="50" cy="72" rx="30" ry="24" fill="#2c2420"/></svg>`;
 
@@ -138,13 +138,13 @@ function buildSignatureHtml(petName, photoDataUrl) {
   </div>`;
 }
 
-async function measureBlocksHeight(browser, blockHtmls) {
+async function measureBlocksHeight(browser, blockHtmls, fontCss) {
   const combined = blockHtmls.map(b => b.html).join('\n');
   const measureHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8"/>
-  ${FONT_LINK}
+  ${fontCss}
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { width: ${PAGE_WIDTH}px; }
@@ -155,9 +155,8 @@ async function measureBlocksHeight(browser, blockHtmls) {
     }
     .para { font-family: 'Lato', sans-serif; font-size: 12.8px; font-weight: 400; line-height: 1.82; color: #2c2420; margin-bottom: 16px; break-inside: avoid; }
     .para.italic { font-style: italic; }
-    .divider { text-align: center; font-size: 13px; letter-spacing: 4px; margin: 6px 0 14px 0; break-inside: avoid; }
-    .pet-greeting { font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 600; margin-bottom: 14px; break-inside: avoid; }
-    .pet-signoff { font-family: 'Dancing Script', cursive; font-size: 20px; font-weight: 600; margin-top: 14px; break-inside: avoid; }
+    .divider { text-align: center; font-size: 13px; letter-spacing: 4px; margin: 6px 0 14px 0; break-inside: avoid; column-span: all; }
+    .pet-greeting { font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 600; margin-bottom: 14px; break-inside: avoid; column-span: all; }
   </style>
 </head>
 <body>
@@ -167,30 +166,31 @@ async function measureBlocksHeight(browser, blockHtmls) {
 
   const page = await browser.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: 9999 });
-  await page.setContent(measureHtml, { waitUntil: 'networkidle2', timeout: 90000 });
+  await page.setContent(measureHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.evaluate(() => document.fonts.ready);
   const height = await page.evaluate(() => document.getElementById('box').offsetHeight);
   await page.close();
   return height;
 }
 
-async function findSplitPoint(browser, blocks, { hasSignature }) {
+async function findSplitPoint(browser, blocks, { hasSignature }, fontCss) {
   const signatureH = hasSignature ? SIGNATURE_HEIGHT : 0;
   const availableForContent = CONTENT_AREA_HEIGHT - signatureH;
 
-  const totalHeight = await measureBlocksHeight(browser, blocks);
+  const totalHeight = await measureBlocksHeight(browser, blocks, fontCss);
   if (totalHeight <= availableForContent) return blocks.length;
 
   let lo = 1, hi = blocks.length - 1;
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2);
-    const h = await measureBlocksHeight(browser, blocks.slice(0, mid));
+    const h = await measureBlocksHeight(browser, blocks.slice(0, mid), fontCss);
     if (h <= CONTENT_AREA_HEIGHT) lo = mid;
     else hi = mid - 1;
   }
   return lo;
 }
 
-function buildPageHtml({ bgDataUrl, blocks, includeSignature, petName, photoDataUrl }) {
+function buildPageHtml({ bgDataUrl, blocks, includeSignature, petName, photoDataUrl, fontCss }) {
   const bodyHtml = blocks.map(b => b.html).join('\n');
   const sigHtml = includeSignature ? buildSignatureHtml(petName, photoDataUrl) : '';
 
@@ -198,7 +198,7 @@ function buildPageHtml({ bgDataUrl, blocks, includeSignature, petName, photoData
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  ${FONT_LINK}
+  ${fontCss}
   <style>${BASE_STYLES}</style>
 </head>
 <body>
@@ -214,6 +214,7 @@ function buildPageHtml({ bgDataUrl, blocks, includeSignature, petName, photoData
 
 async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl }) {
   const bgDataUrl = getBgDataUrl();
+  const fontCss = await getInlineFontCss();
 
   let photoDataUrl = null;
   if (photoUrl) {
@@ -242,7 +243,7 @@ async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl
     let remaining = [...allBlocks];
 
     while (remaining.length > 0) {
-      const splitAt = await findSplitPoint(browser, remaining, { hasSignature: true });
+      const splitAt = await findSplitPoint(browser, remaining, { hasSignature: true }, fontCss);
       const isLastPage = splitAt >= remaining.length;
       const pageBlocks = remaining.slice(0, splitAt);
       remaining = isLastPage ? [] : remaining.slice(splitAt);
@@ -254,10 +255,12 @@ async function generateSoulReadingPdf({ calledYou, petName, paragraphs, photoUrl
         includeSignature: isActuallyLast,
         petName,
         photoDataUrl,
+        fontCss,
       });
 
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle2', timeout: 90000 });
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.evaluate(() => document.fonts.ready);
       pdfBuffers.push(await page.pdf({
         width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`,
         printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 },
