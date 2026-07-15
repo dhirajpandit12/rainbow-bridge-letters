@@ -73,15 +73,11 @@ const BASE_STYLES = `
   .para.italic { font-style: italic; color: #8b5e52; }
   .divider {
     text-align: center; color: #c47d7d; font-size: 13px; letter-spacing: 4px;
-    margin: 6px 0 14px 0; break-inside: avoid; break-before: avoid;
+    margin: 6px 0 14px 0; break-inside: avoid; column-span: all;
   }
   .pet-greeting {
     font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 600;
-    color: #c47d7d; margin-bottom: 14px; break-inside: avoid;
-  }
-  .pet-signoff {
-    font-family: 'Dancing Script', cursive; font-size: 20px; font-weight: 600;
-    color: #2c2420; margin-top: 14px; break-inside: avoid;
+    color: #c47d7d; margin-bottom: 14px; break-inside: avoid; column-span: all;
   }
   .sig-block {
     margin-top: 20px; text-align: center; break-inside: avoid;
@@ -125,8 +121,7 @@ function buildBlocks(paragraphs, petCallsYou, petName) {
       html: `<div class="divider">─────── ✦ ───────</div>
 <div class="pet-greeting">Dear ${petCallsYou},</div>
 <p class="para">${para5Body}</p>
-${italicLine ? `<p class="para italic">${italicLine}</p>` : ''}
-<div class="pet-signoff">${petName} 🐾</div>`,
+${italicLine ? `<p class="para italic">${italicLine}</p>` : ''}`,
     },
   ];
 }
