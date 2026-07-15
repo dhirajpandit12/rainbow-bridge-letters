@@ -66,8 +66,8 @@ function getBaseStyles(fontCss) {
     }
     .para {
       font-family: 'Lato', sans-serif;
-      font-size: 12.8px; font-weight: 400; line-height: 1.82; color: #2c2420;
-      margin-bottom: 16px; break-inside: avoid;
+      font-size: 11.4px; font-weight: 400; line-height: 1.72; color: #2c2420;
+      margin-bottom: 12px; break-inside: avoid;
     }
     .para.italic { font-style: italic; color: #8b5e52; }
     .divider {
@@ -81,8 +81,7 @@ function getBaseStyles(fontCss) {
       color: #c47d7d; margin-bottom: 14px; break-inside: avoid;
     }
     .sig-block {
-      column-span: all;
-      margin-top: 18px; text-align: center; break-inside: avoid;
+      margin-top: 16px; text-align: center; break-inside: avoid;
     }
     .photo-circle {
       width: 110px; height: 110px; border-radius: 50%; overflow: hidden;
