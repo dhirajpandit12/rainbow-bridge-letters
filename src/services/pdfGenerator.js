@@ -9,9 +9,10 @@ const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'rainbow-bridge-bg
 const PAGE_HEIGHT = 1123;
 const PAGE_WIDTH = 794;
 const CONTENT_TOP_PADDING = 320;
-const CONTENT_BOTTOM_PADDING = 175;
+const CONTENT_BOTTOM_PADDING = 260;
 const CONTENT_SIDE_PADDING = 52;
 const COLUMN_GAP = 28;
+const SIGNATURE_HEIGHT = 90;
 
 function getBgDataUrl() {
   const bgImageBase64 = fs.readFileSync(BG_IMAGE_PATH).toString('base64');
@@ -51,6 +52,10 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       <div class="forever-line"></div>
     </div>` : '';
 
+  const textBottom = includeSignature
+    ? CONTENT_BOTTOM_PADDING + SIGNATURE_HEIGHT + 16
+    : CONTENT_BOTTOM_PADDING;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,13 +70,22 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       background-image: url('${bgDataUrl}');
       background-size: cover; background-position: center;
     }
-    .content {
+    .text-area {
       position: absolute;
       top: ${CONTENT_TOP_PADDING}px;
       left: ${CONTENT_SIDE_PADDING}px;
       right: ${CONTENT_SIDE_PADDING}px;
-      bottom: ${CONTENT_BOTTOM_PADDING}px;
+      bottom: ${textBottom}px;
       overflow: hidden;
+    }
+    .sig-area {
+      position: absolute;
+      bottom: ${CONTENT_BOTTOM_PADDING}px;
+      left: ${CONTENT_SIDE_PADDING}px;
+      right: ${CONTENT_SIDE_PADDING}px;
+      height: ${SIGNATURE_HEIGHT}px;
+      text-align: right;
+      padding-right: 8px;
     }
     .greeting {
       font-family: 'Dancing Script', cursive;
@@ -84,7 +98,6 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       column-count: 2; column-gap: ${COLUMN_GAP}px;
     }
     .letter-body p { margin-bottom: 12px; }
-    .signature-block { text-align: right; margin-top: 24px; padding-right: 8px; }
     .pet-name { font-family: 'Dancing Script', cursive; font-size: 34px; font-weight: 700; color: #2c2420; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .paw { display: inline-block; width: 26px; height: 26px; }
     .paw-pad { fill: #2c2420; }
@@ -94,11 +107,16 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 </head>
 <body>
   <div class="page">
-    <div class="content">
+    <div class="text-area">
       ${greetingHtml}
       <div class="letter-body">${bodyHtml}</div>
-      ${signatureHtml}
     </div>
+    ${includeSignature ? `
+    <div class="sig-area">
+      <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
+      <div class="forever-text">Forever Loved. Never Gone.</div>
+      <div class="forever-line"></div>
+    </div>` : ''}
   </div>
 </body>
 </html>`;
