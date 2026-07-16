@@ -60,13 +60,17 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: ${PAGE_WIDTH}px; height: ${PAGE_HEIGHT}px; overflow: hidden; }
     .page {
-      width: ${PAGE_WIDTH}px;
-      height: ${PAGE_HEIGHT}px;
+      width: ${PAGE_WIDTH}px; height: ${PAGE_HEIGHT}px;
       position: relative;
       background-image: url('${bgDataUrl}');
-      background-size: cover;
-      background-position: center;
-      padding: ${CONTENT_TOP_PADDING}px ${CONTENT_SIDE_PADDING}px ${CONTENT_BOTTOM_PADDING}px ${CONTENT_SIDE_PADDING}px;
+      background-size: cover; background-position: center;
+    }
+    .content {
+      position: absolute;
+      top: ${CONTENT_TOP_PADDING}px;
+      left: ${CONTENT_SIDE_PADDING}px;
+      right: ${CONTENT_SIDE_PADDING}px;
+      bottom: ${CONTENT_BOTTOM_PADDING}px;
       overflow: hidden;
     }
     .greeting {
@@ -90,9 +94,11 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 </head>
 <body>
   <div class="page">
-    ${greetingHtml}
-    <div class="letter-body">${bodyHtml}</div>
-    ${signatureHtml}
+    <div class="content">
+      ${greetingHtml}
+      <div class="letter-body">${bodyHtml}</div>
+      ${signatureHtml}
+    </div>
   </div>
 </body>
 </html>`;
@@ -116,7 +122,11 @@ async function generatePdf({ calledYou, letterBody, petName }) {
   const paragraphs = parseParagraphs(letterBody);
   const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs);
 
-  const browser = await puppeteer.launch({
+  const isLocal = process.env.IS_LOCAL === 'true';
+  const browser = await puppeteer.launch(isLocal ? {
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    headless: true, args: ['--no-sandbox'],
+  } : {
     args: chromium.args,
     defaultViewport: chromium.defaultViewport,
     executablePath: await chromium.executablePath(),
