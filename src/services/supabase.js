@@ -33,7 +33,7 @@ async function getPendingOrders() {
   const { data, error } = await supabase
     .from('rainbow_orders')
     .select('*')
-    .in('status', ['pending'])
+    .in('status', ['pending', 'processing'])
     .lte('send_after', new Date().toISOString())
     .limit(10);
 
@@ -97,7 +97,7 @@ async function getPendingSoulReadings() {
   const { data, error } = await supabase
     .from('soul_reading_orders')
     .select('*')
-    .in('status', ['pending'])
+    .in('status', ['pending', 'processing'])
     .lte('send_after', new Date().toISOString())
     .limit(10);
 
