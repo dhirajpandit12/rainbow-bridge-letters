@@ -94,7 +94,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
     .greeting-heart { color: #e8a0a0; font-size: 22px; margin-left: 6px; }
     .letter-body {
       font-family: 'Lato', sans-serif;
-      font-size: 13.2px; font-weight: 400; line-height: 1.85; color: #1a1210;
+      font-size: 11.4px; font-weight: 400; line-height: 1.72; color: #1a1210;
       column-count: 2; column-gap: ${COLUMN_GAP}px;
     }
     .letter-body p { margin-bottom: 12px; }
