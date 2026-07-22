@@ -24,7 +24,11 @@ function getBgDataUrl() {
 function fetchImageAsBase64(url) {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    client.get(url, (res) => {
+    const req = client.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        fetchImageAsBase64(res.headers.location).then(resolve).catch(reject);
+        return;
+      }
       const chunks = [];
       res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
@@ -33,7 +37,12 @@ function fetchImageAsBase64(url) {
         resolve(`data:${contentType};base64,${buffer.toString('base64')}`);
       });
       res.on('error', reject);
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(8000, () => {
+      req.destroy();
+      reject(new Error('Photo fetch timed out'));
+    });
   });
 }
 
