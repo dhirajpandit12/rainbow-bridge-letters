@@ -125,21 +125,31 @@ function extractSoulReadingProperties(lineItem) {
 }
 
 async function processSoulReadingOrder(order) {
-  const lineItem = (order.line_items || []).find(item => {
+  const lineItems = (order.line_items || []).filter(item => {
     const title = (item.title || '').toLowerCase();
     return title.includes('pet soul reading') || title.includes('soul reading');
   });
 
-  if (!lineItem) return;
+  if (!lineItems.length) return;
 
-  const details = extractSoulReadingProperties(lineItem);
+  const seenPetNames = new Set();
 
-  if (!details.petName || !details.ownerName) {
-    console.warn(`[SoulReading] Missing required fields for order ${order.id}`);
-    return;
+  for (const lineItem of lineItems) {
+    const details = extractSoulReadingProperties(lineItem);
+
+    if (!details.petName || !details.ownerName) {
+      console.warn(`[SoulReading] Missing required fields for order ${order.id}`);
+      continue;
+    }
+
+    if (seenPetNames.has(details.petName.toLowerCase())) {
+      console.warn(`[SoulReading] Duplicate pet name "${details.petName}" in order ${order.id} — skipping`);
+      continue;
+    }
+
+    seenPetNames.add(details.petName.toLowerCase());
+    await saveSoulReadingToQueue(order, details);
   }
-
-  await saveSoulReadingToQueue(order, details);
 }
 
 module.exports = { isSoulReadingOrder, processSoulReadingOrder, generateSoulReading };

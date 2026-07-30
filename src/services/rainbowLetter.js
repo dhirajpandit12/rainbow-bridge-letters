@@ -128,24 +128,34 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
 async function processRainbowBridgeOrder(order) {
   const orderId = order.id;
 
-  const lineItem = (order.line_items || []).find(item => {
+  const lineItems = (order.line_items || []).filter(item => {
     const title = (item.title || '').toLowerCase();
     return title.includes('rainbow bridge') || title.includes('final message from your pet');
   });
 
-  if (!lineItem) {
+  if (!lineItems.length) {
     console.warn(`[Rainbow] No matching line item found for order ${orderId}`);
     return;
   }
 
-  const details = extractProperties(lineItem);
+  const seenPetNames = new Set();
 
-  if (!details.petName || !details.calledYou) {
-    console.warn(`[Rainbow] Missing required pet details for order ${orderId}`);
-    return;
+  for (const lineItem of lineItems) {
+    const details = extractProperties(lineItem);
+
+    if (!details.petName || !details.calledYou) {
+      console.warn(`[Rainbow] Missing required pet details for order ${orderId}`);
+      continue;
+    }
+
+    if (seenPetNames.has(details.petName.toLowerCase())) {
+      console.warn(`[Rainbow] Duplicate pet name "${details.petName}" in order ${orderId} — skipping`);
+      continue;
+    }
+
+    seenPetNames.add(details.petName.toLowerCase());
+    await saveOrderToQueue(order, details);
   }
-
-  await saveOrderToQueue(order, details);
 }
 
 module.exports = { isRainbowBridgeOrder, processRainbowBridgeOrder, generateLetter };
