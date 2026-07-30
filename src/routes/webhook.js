@@ -46,17 +46,25 @@ router.post('/', async (req, res) => {
     return res.status(200).send('OK');
   }
 
+  let recognized = false;
+
   if (isRainbowBridgeOrder(order)) {
+    recognized = true;
     console.log(`[Webhook] Rainbow Bridge order received for ${email}`);
     processRainbowBridgeOrder(order).catch(err => {
       console.error(`[Rainbow] Processing failed for ${email}:`, err.message);
     });
-  } else if (isSoulReadingOrder(order)) {
+  }
+
+  if (isSoulReadingOrder(order)) {
+    recognized = true;
     console.log(`[Webhook] Soul Reading order received for ${email}`);
     processSoulReadingOrder(order).catch(err => {
       console.error(`[SoulReading] Processing failed for ${email}:`, err.message);
     });
-  } else {
+  }
+
+  if (!recognized) {
     console.log(`[Webhook] Unknown product — skipping`);
   }
 
