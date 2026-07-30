@@ -88,8 +88,19 @@ function isRainbowBridgeOrder(order) {
   });
 }
 
-async function generateLetter(details) {
-  const userMessage = `Pet Details:
+async function generateLetter(details, correctionNote = null, existingLetter = null) {
+  let userMessage;
+
+  if (correctionNote && existingLetter) {
+    userMessage = `Here is the original letter that was sent to the customer:
+
+${existingLetter}
+
+The customer has requested a correction: "${correctionNote}"
+
+Please rewrite the letter applying this correction. Keep everything else the same as much as possible. Do NOT include "Dear ${details.calledYou}," as that is already on the page.`;
+  } else {
+    userMessage = `Pet Details:
 - Pet's Name: ${details.petName}
 - Type of Pet: ${details.petType}
 - Owner's Name: ${details.ownerName}
@@ -99,6 +110,7 @@ async function generateLetter(details) {
 - Owner's message to pet: ${details.messageToPet}
 
 Write the letter body now (do NOT include "Dear ${details.calledYou}," as that is already on the page):`;
+  }
 
   const response = await anthropic.messages.create({
     model: 'claude-opus-4-8',

@@ -1,6 +1,6 @@
 const {
-  getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed,
-  getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed,
+  getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed, saveGeneratedLetter,
+  getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
 } = require('../services/supabase');
 const { generateLetter } = require('../services/rainbowLetter');
 const { generatePdf } = require('../services/pdfGenerator');
@@ -31,7 +31,15 @@ async function processRainbowOrders() {
 
       await markOrderProcessing(order.id);
       console.log(`[Cron] Generating Rainbow letter for ${details.petName} (order ${order.shopify_order_id})`);
-      const letterBody = await generateLetter(details);
+
+      let letterBody;
+      if (order.correction_note && order.generated_letter) {
+        letterBody = await generateLetter(details, order.correction_note, order.generated_letter);
+      } else {
+        letterBody = await generateLetter(details);
+      }
+
+      await saveGeneratedLetter(order.id, letterBody);
       const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
       await sendRainbowBridgeEmail({ toEmail: order.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
       await markOrderProcessed(order.id);
@@ -67,7 +75,15 @@ async function processSoulReadingOrders() {
 
       await markSoulReadingProcessing(order.id);
       console.log(`[Cron] Generating Soul Reading for ${details.petName} (order ${order.shopify_order_id})`);
-      const paragraphs = await generateSoulReading(details);
+
+      let paragraphs;
+      if (order.correction_note && order.generated_reading) {
+        paragraphs = await generateSoulReading(details, order.correction_note, order.generated_reading);
+      } else {
+        paragraphs = await generateSoulReading(details);
+      }
+
+      await saveGeneratedReading(order.id, paragraphs);
       const pdfBuffer = await generateSoulReadingPdf({ calledYou: details.petCallsYou, petName: details.petName, paragraphs, photoUrl: details.photoUrl });
       await sendSoulReadingEmail({ toEmail: order.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
       await markSoulReadingProcessed(order.id);

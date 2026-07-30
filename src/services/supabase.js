@@ -59,6 +59,15 @@ async function markOrderProcessed(id) {
   if (error) throw new Error(`Supabase update failed: ${error.message}`);
 }
 
+async function saveGeneratedLetter(id, letterBody) {
+  const { error } = await supabase
+    .from('rainbow_orders')
+    .update({ generated_letter: letterBody })
+    .eq('id', id);
+
+  if (error) console.error(`[Queue] Could not save generated letter for ${id}:`, error.message);
+}
+
 async function markOrderFailed(id, reason) {
   const { error } = await supabase
     .from('rainbow_orders')
@@ -123,6 +132,15 @@ async function markSoulReadingProcessed(id) {
   if (error) throw new Error(`Supabase update failed: ${error.message}`);
 }
 
+async function saveGeneratedReading(id, paragraphs) {
+  const { error } = await supabase
+    .from('soul_reading_orders')
+    .update({ generated_reading: paragraphs })
+    .eq('id', id);
+
+  if (error) console.error(`[Queue] Could not save generated reading for ${id}:`, error.message);
+}
+
 async function markSoulReadingFailed(id, reason) {
   const { error } = await supabase
     .from('soul_reading_orders')
@@ -133,6 +151,6 @@ async function markSoulReadingFailed(id, reason) {
 }
 
 module.exports = {
-  saveOrderToQueue, getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed,
-  saveSoulReadingToQueue, getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed,
+  saveOrderToQueue, getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed, saveGeneratedLetter,
+  saveSoulReadingToQueue, getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
 };

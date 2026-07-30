@@ -71,8 +71,21 @@ function parseParagraphs(text) {
   return result;
 }
 
-async function generateSoulReading(details) {
-  const prompt = buildPrompt(details);
+async function generateSoulReading(details, correctionNote = null, existingReading = null) {
+  let prompt;
+
+  if (correctionNote && existingReading) {
+    const existingText = Object.values(existingReading).join('\n\n');
+    prompt = `Here is the original soul reading that was sent to the customer:
+
+${existingText}
+
+The customer has requested a correction: "${correctionNote}"
+
+Please rewrite the reading applying this correction. Keep everything else the same as much as possible. Return in the exact same format with PARA_ONE, PARA_TWO, PARA_THREE, PARA_FOUR, PARA_FIVE clearly labeled.`;
+  } else {
+    prompt = buildPrompt(details);
+  }
 
   const response = await anthropic.messages.create({
     model: 'claude-opus-4-8',
