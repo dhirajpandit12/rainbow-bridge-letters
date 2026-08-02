@@ -101,14 +101,35 @@ async function generateSoulReading(details, correctionNote = null, existingReadi
   let prompt;
 
   if (correctionNote && existingReading) {
-    const existingText = Object.values(existingReading).join('\n\n');
+    const existingText = Object.entries(existingReading)
+      .map(([key, val]) => `---${key}---\n${val}`)
+      .join('\n\n');
     prompt = `Here is the original soul reading that was sent to the customer:
 
 ${existingText}
 
 The customer has requested a correction: "${correctionNote}"
 
-Please rewrite the reading applying this correction. Keep everything else the same as much as possible. Return in the exact same format with PARA_ONE, PARA_TWO, PARA_THREE, PARA_FOUR, PARA_FIVE clearly labeled.`;
+Please rewrite the reading applying this correction. Keep everything else the same as much as possible.
+
+Return in EXACTLY this format — nothing else:
+
+---PARA_ONE---
+[content]
+
+---PARA_TWO---
+[content]
+
+---PARA_THREE---
+[content]
+
+---PARA_FOUR---
+[content]
+
+---PARA_FIVE---
+[content]
+
+---END---`;
   } else {
     prompt = buildPrompt(details);
   }
