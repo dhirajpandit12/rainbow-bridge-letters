@@ -138,7 +138,7 @@ async function saveGeneratedReading(id, paragraphs) {
     .update({ generated_reading: paragraphs })
     .eq('id', id);
 
-  if (error) console.error(`[Queue] Could not save generated reading for ${id}:`, error.message);
+  if (error) throw new Error(`Could not save generated reading: ${error.message}`);
 }
 
 async function markSoulReadingFailed(id, reason) {

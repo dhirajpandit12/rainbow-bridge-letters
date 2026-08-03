@@ -94,6 +94,12 @@ function parseParagraphs(text) {
     result[tag] = match ? match[1].trim() : '';
   }
 
+  const hasContent = tags.some(tag => result[tag].length > 0);
+  if (!hasContent) {
+    console.error('[SoulReading] parseParagraphs got empty result. Raw AI response:\n', text.slice(0, 500));
+    throw new Error('AI response could not be parsed — all paragraphs empty');
+  }
+
   return result;
 }
 
