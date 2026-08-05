@@ -41,7 +41,8 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [correctionNote, setCorrectionNote] = useState('');
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [sent, setSent] = useState<'correction' | 'resend' | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -66,14 +67,28 @@ export default function OrderDetailPage() {
   async function handleResend() {
     const token = getToken();
     if (!token || !order) return;
-    setSending(true); setError(''); setSent(false);
+    setSending(true); setError(''); setSent(null);
     try {
       await resendOrder(token, type, order.id, correctionNote);
-      setSent(true);
+      setSent('correction');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to resend');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleResendOnly() {
+    const token = getToken();
+    if (!token || !order) return;
+    setResending(true); setError(''); setSent(null);
+    try {
+      await resendOrder(token, type, order.id, '');
+      setSent('resend');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to resend');
+    } finally {
+      setResending(false);
     }
   }
 
@@ -183,17 +198,25 @@ export default function OrderDetailPage() {
               className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none text-stone-700"
             />
             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-            {sent && <p className="text-green-600 text-sm mt-2">✓ Queued. New email will arrive in ~60 seconds.</p>}
-            <div className="mt-3">
+            {sent === 'correction' && <p className="text-green-600 text-sm mt-2">✓ Correction queued. Regenerated email arriving in ~60 seconds.</p>}
+            {sent === 'resend' && <p className="text-green-600 text-sm mt-2">✓ Same email resent. Arriving in ~60 seconds.</p>}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={handleResendOnly}
+                disabled={resending || sending || !hasContent}
+                className="px-5 py-2.5 bg-stone-700 hover:bg-stone-800 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                {resending ? 'Sending...' : 'Resend as-is'}
+              </button>
               <button
                 onClick={handleResend}
-                disabled={sending || !correctionNote.trim() || !hasContent}
-                className="w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+                disabled={sending || resending || !correctionNote.trim() || !hasContent}
+                className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
               >
                 {sending ? 'Sending...' : 'Regenerate & Resend'}
               </button>
-              {!hasContent && <p className="text-xs text-stone-400 mt-2">No content saved yet — order needs to complete first.</p>}
             </div>
+            {!hasContent && <p className="text-xs text-stone-400 mt-2">No content saved yet — order needs to complete first.</p>}
           </div>
         </div>
 
