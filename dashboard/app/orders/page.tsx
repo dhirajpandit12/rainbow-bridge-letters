@@ -14,7 +14,7 @@ function statusColor(status: string) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export default function OrdersPage() {
@@ -40,8 +40,6 @@ export default function OrdersPage() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
-
-  // Reset page when tab or search changes
   useEffect(() => { setPage(1); }, [tab, search]);
 
   const filtered = (tab === 'rainbow' ? orders.rainbow : orders.soul).filter(o =>
@@ -54,7 +52,6 @@ export default function OrdersPage() {
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length < filtered.length;
 
-  // Infinite scroll via IntersectionObserver
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return;
     const obs = new IntersectionObserver(entries => {
@@ -64,44 +61,38 @@ export default function OrdersPage() {
     return () => obs.disconnect();
   }, [hasMore, visible.length]);
 
-  function handleLogout() {
-    clearToken();
-    router.push('/');
-  }
-
   return (
     <div className="min-h-screen">
-      <header className="bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🌈</span>
-          <h1 className="text-lg font-semibold text-stone-800">Rainbow Bridge Admin</h1>
+      <header className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🌈</span>
+          <h1 className="text-base font-semibold text-stone-800">Rainbow Bridge Admin</h1>
         </div>
-        <button onClick={handleLogout} className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Sign out</button>
+        <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700">Sign out</button>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-6xl mx-auto px-4 py-5">
+        {/* Tabs + Search */}
+        <div className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-2">
             <button
               onClick={() => setTab('rainbow')}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${tab === 'rainbow' ? 'bg-rose-500 text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${tab === 'rainbow' ? 'bg-rose-500 text-white' : 'bg-white text-stone-600 border border-stone-200'}`}
             >
-              Rainbow Bridge
-              <span className="ml-2 text-xs opacity-70">({orders.rainbow.length})</span>
+              Rainbow <span className="opacity-70">({orders.rainbow.length})</span>
             </button>
             <button
               onClick={() => setTab('soul')}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${tab === 'soul' ? 'bg-violet-500 text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${tab === 'soul' ? 'bg-violet-500 text-white' : 'bg-white text-stone-600 border border-stone-200'}`}
             >
-              Soul Readings
-              <span className="ml-2 text-xs opacity-70">({orders.soul.length})</span>
+              Soul <span className="opacity-70">({orders.soul.length})</span>
             </button>
           </div>
           <input
             placeholder="Search pet, email, name..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="px-4 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 w-64"
+            className="px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 w-full sm:w-56"
           />
         </div>
 
@@ -111,7 +102,8 @@ export default function OrdersPage() {
           <div className="text-center text-stone-400 py-20">No orders found</div>
         ) : (
           <>
-            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+            {/* Desktop table */}
+            <div className="hidden sm:block bg-white rounded-2xl border border-stone-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-100 text-stone-500 text-left">
@@ -125,26 +117,16 @@ export default function OrdersPage() {
                 </thead>
                 <tbody>
                   {visible.map((order, i) => (
-                    <tr
-                      key={order.id}
-                      className={`border-b border-stone-100 hover:bg-stone-50 transition-colors ${i === visible.length - 1 && !hasMore ? 'border-b-0' : ''}`}
-                    >
+                    <tr key={order.id} className={`border-b border-stone-100 hover:bg-stone-50 transition-colors ${i === visible.length - 1 && !hasMore ? 'border-b-0' : ''}`}>
                       <td className="px-5 py-3 font-medium text-stone-800">{order.pet_name}</td>
                       <td className="px-5 py-3 text-stone-600">{order.owner_name}</td>
                       <td className="px-5 py-3 text-stone-500">{order.email}</td>
                       <td className="px-5 py-3">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
-                          {order.status}
-                        </span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>{order.status}</span>
                       </td>
                       <td className="px-5 py-3 text-stone-500 text-xs">{formatDate(order.created_at)}</td>
                       <td className="px-5 py-3">
-                        <button
-                          onClick={() => router.push(`/orders/${tab}/${order.id}`)}
-                          className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors font-medium"
-                        >
-                          View
-                        </button>
+                        <button onClick={() => router.push(`/orders/${tab}/${order.id}`)} className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium">View</button>
                       </td>
                     </tr>
                   ))}
@@ -152,17 +134,29 @@ export default function OrdersPage() {
               </table>
             </div>
 
-            {hasMore && (
-              <div ref={sentinelRef} className="text-center py-6 text-stone-400 text-sm">
-                Loading more...
-              </div>
-            )}
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-2">
+              {visible.map(order => (
+                <button
+                  key={order.id}
+                  onClick={() => router.push(`/orders/${tab}/${order.id}`)}
+                  className="w-full bg-white rounded-xl border border-stone-200 px-4 py-3 text-left flex items-center justify-between gap-3 active:bg-stone-50"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-stone-800 text-sm truncate">{order.pet_name}</p>
+                    <p className="text-xs text-stone-400 truncate">{order.owner_name} · {order.email}</p>
+                    <p className="text-xs text-stone-300 mt-0.5">{formatDate(order.created_at)}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(order.status)}`}>{order.status}</span>
+                    <span className="text-stone-300 text-lg">›</span>
+                  </div>
+                </button>
+              ))}
+            </div>
 
-            {!hasMore && filtered.length > PAGE_SIZE && (
-              <p className="text-center text-stone-400 text-xs mt-4">
-                All {filtered.length} orders shown
-              </p>
-            )}
+            {hasMore && <div ref={sentinelRef} className="text-center py-6 text-stone-400 text-sm">Loading more...</div>}
+            {!hasMore && filtered.length > PAGE_SIZE && <p className="text-center text-stone-400 text-xs mt-4">All {filtered.length} orders shown</p>}
           </>
         )}
       </div>
