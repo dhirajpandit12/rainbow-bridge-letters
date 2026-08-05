@@ -10,6 +10,7 @@ const PAGE_HEIGHT = 1123;
 const PAGE_WIDTH = 794;
 const CONTENT_TOP_PADDING = 320;
 const CONTENT_BOTTOM_PADDING = 260;
+const CONTENT_BOTTOM_PADDING_P1 = 180;
 const CONTENT_SIDE_PADDING = 52;
 const COLUMN_GAP = 28;
 const SIGNATURE_HEIGHT = 90;
@@ -25,7 +26,7 @@ function parseParagraphs(letterBody) {
 
 function splitParagraphsByWordCount(paragraphs) {
   const totalWords = paragraphs.reduce((sum, p) => sum + p.split(' ').length, 0);
-  const target = Math.floor(totalWords / 2);
+  const target = Math.floor(totalWords * 0.44);
   let count = 0;
   let splitIdx = Math.floor(paragraphs.length / 2);
   for (let i = 0; i < paragraphs.length - 1; i++) {
@@ -54,7 +55,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 
   const textBottom = includeSignature
     ? CONTENT_BOTTOM_PADDING + SIGNATURE_HEIGHT + 16
-    : CONTENT_BOTTOM_PADDING;
+    : (isFirstPage ? CONTENT_BOTTOM_PADDING_P1 : CONTENT_BOTTOM_PADDING);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -97,7 +98,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       font-size: 11.4px; font-weight: 400; line-height: 1.72; color: #1a1210;
       column-count: 2; column-gap: ${COLUMN_GAP}px;
     }
-    .letter-body p { margin-bottom: 12px; }
+    .letter-body p { margin-bottom: 8px; }
     .pet-name { font-family: 'Dancing Script', cursive; font-size: 34px; font-weight: 700; color: #2c2420; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .paw { display: inline-block; width: 26px; height: 26px; }
     .paw-pad { fill: #2c2420; }
