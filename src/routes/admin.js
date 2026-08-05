@@ -62,7 +62,7 @@ router.post('/resend', async (req, res) => {
     if (type === 'soul') {
       const { data, error } = await supabase.from('soul_reading_orders').select('*').eq('id', orderId).single();
       if (error || !data) throw new Error(`Order not found`);
-      if (!data.generated_reading || !data.generated_reading.PARA_ONE) throw new Error('No saved reading found');
+      if (!isFresh && !data.generated_reading?.PARA_ONE) throw new Error('No saved reading found');
 
       let paragraphs = data.generated_reading;
 
@@ -89,7 +89,7 @@ router.post('/resend', async (req, res) => {
     } else if (type === 'rainbow') {
       const { data, error } = await supabase.from('rainbow_orders').select('*').eq('id', orderId).single();
       if (error || !data) throw new Error(`Order not found`);
-      if (!data.generated_letter || !data.generated_letter.trim()) throw new Error('No saved letter found');
+      if (!isFresh && (!data.generated_letter || !data.generated_letter.trim())) throw new Error('No saved letter found');
 
       let letterBody = data.generated_letter;
 
