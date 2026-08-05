@@ -9,6 +9,14 @@ const { startQueueCron } = require('./cron/processQueue');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+app.use('/admin', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-token');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 app.use('/webhook/order-paid', express.raw({ type: 'application/json' }), webhookRouter);
 app.use('/admin', express.json(), adminRouter);
 
