@@ -1,19 +1,15 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getToken, clearToken } from '@/lib/auth';
 import { fetchOrders, Order } from '@/lib/api';
 
-const STATUS_COLORS: Record<string, string> = {
-  completed: 'bg-green-100 text-green-700',
-  pending: 'bg-amber-100 text-amber-700',
-  processing: 'bg-blue-100 text-blue-700',
-};
+const PAGE_SIZE = 25;
 
 function statusColor(status: string) {
-  if (status === 'completed') return STATUS_COLORS.completed;
-  if (status === 'pending') return STATUS_COLORS.pending;
-  if (status === 'processing') return STATUS_COLORS.processing;
+  if (status === 'completed') return 'bg-green-100 text-green-700';
+  if (status === 'pending') return 'bg-amber-100 text-amber-700';
+  if (status === 'processing') return 'bg-blue-100 text-blue-700';
   return 'bg-red-100 text-red-700';
 }
 
@@ -27,6 +23,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<{ rainbow: Order[]; soul: Order[] }>({ rainbow: [], soul: [] });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     const token = getToken();
@@ -43,11 +41,28 @@ export default function OrdersPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const list = (tab === 'rainbow' ? orders.rainbow : orders.soul).filter(o =>
-    !search || o.pet_name.toLowerCase().includes(search.toLowerCase()) ||
+  // Reset page when tab or search changes
+  useEffect(() => { setPage(1); }, [tab, search]);
+
+  const filtered = (tab === 'rainbow' ? orders.rainbow : orders.soul).filter(o =>
+    !search ||
+    o.pet_name.toLowerCase().includes(search.toLowerCase()) ||
     o.email.toLowerCase().includes(search.toLowerCase()) ||
     o.owner_name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const visible = filtered.slice(0, page * PAGE_SIZE);
+  const hasMore = visible.length < filtered.length;
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) setPage(p => p + 1);
+    }, { threshold: 0.1 });
+    obs.observe(sentinelRef.current);
+    return () => obs.disconnect();
+  }, [hasMore, visible.length]);
 
   function handleLogout() {
     clearToken();
@@ -92,46 +107,63 @@ export default function OrdersPage() {
 
         {loading ? (
           <div className="text-center text-stone-400 py-20">Loading orders...</div>
-        ) : list.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center text-stone-400 py-20">No orders found</div>
         ) : (
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-100 text-stone-500 text-left">
-                  <th className="px-5 py-3 font-medium">Pet</th>
-                  <th className="px-5 py-3 font-medium">Owner</th>
-                  <th className="px-5 py-3 font-medium">Email</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Date</th>
-                  <th className="px-5 py-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((order, i) => (
-                  <tr key={order.id} className={`border-b border-stone-100 hover:bg-stone-50 transition-colors ${i === list.length - 1 ? 'border-b-0' : ''}`}>
-                    <td className="px-5 py-3 font-medium text-stone-800">{order.pet_name}</td>
-                    <td className="px-5 py-3 text-stone-600">{order.owner_name}</td>
-                    <td className="px-5 py-3 text-stone-500">{order.email}</td>
-                    <td className="px-5 py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-stone-500 text-xs">{formatDate(order.created_at)}</td>
-                    <td className="px-5 py-3">
-                      <button
-                        onClick={() => router.push(`/orders/${tab}/${order.id}`)}
-                        className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors font-medium"
-                      >
-                        View
-                      </button>
-                    </td>
+          <>
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 text-stone-500 text-left">
+                    <th className="px-5 py-3 font-medium">Pet</th>
+                    <th className="px-5 py-3 font-medium">Owner</th>
+                    <th className="px-5 py-3 font-medium">Email</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium">Date</th>
+                    <th className="px-5 py-3 font-medium"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {visible.map((order, i) => (
+                    <tr
+                      key={order.id}
+                      className={`border-b border-stone-100 hover:bg-stone-50 transition-colors ${i === visible.length - 1 && !hasMore ? 'border-b-0' : ''}`}
+                    >
+                      <td className="px-5 py-3 font-medium text-stone-800">{order.pet_name}</td>
+                      <td className="px-5 py-3 text-stone-600">{order.owner_name}</td>
+                      <td className="px-5 py-3 text-stone-500">{order.email}</td>
+                      <td className="px-5 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-stone-500 text-xs">{formatDate(order.created_at)}</td>
+                      <td className="px-5 py-3">
+                        <button
+                          onClick={() => router.push(`/orders/${tab}/${order.id}`)}
+                          className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors font-medium"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {hasMore && (
+              <div ref={sentinelRef} className="text-center py-6 text-stone-400 text-sm">
+                Loading more...
+              </div>
+            )}
+
+            {!hasMore && filtered.length > PAGE_SIZE && (
+              <p className="text-center text-stone-400 text-xs mt-4">
+                All {filtered.length} orders shown
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
