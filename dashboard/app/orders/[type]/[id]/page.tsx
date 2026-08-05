@@ -40,6 +40,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [correctionNote, setCorrectionNote] = useState('');
+  const [emailOverride, setEmailOverride] = useState('');
   const [sending, setSending] = useState(false);
   const [resending, setResending] = useState(false);
   const [freshing, setFreshing] = useState(false);
@@ -70,7 +71,7 @@ export default function OrderDetailPage() {
     if (!token || !order) return;
     setSending(true); setError(''); setSent(null);
     try {
-      await resendOrder(token, type, order.id, correctionNote);
+      await resendOrder(token, type, order.id, correctionNote, false, emailOverride || undefined);
       setSent('correction');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to resend');
@@ -84,7 +85,7 @@ export default function OrderDetailPage() {
     if (!token || !order) return;
     setResending(true); setError(''); setSent(null);
     try {
-      await resendOrder(token, type, order.id, '');
+      await resendOrder(token, type, order.id, '', false, emailOverride || undefined);
       setSent('resend');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to resend');
@@ -98,7 +99,7 @@ export default function OrderDetailPage() {
     if (!token || !order) return;
     setFreshing(true); setError(''); setSent(null);
     try {
-      await resendOrder(token, type, order.id, '', true);
+      await resendOrder(token, type, order.id, '', true, emailOverride || undefined);
       setSent('fresh');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to generate');
@@ -199,6 +200,21 @@ export default function OrderDetailPage() {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-stone-200 p-4">
+            <h2 className="text-sm font-semibold text-stone-700 mb-1">Send To</h2>
+            <p className="text-xs text-stone-400 mb-2">Leave blank to use original email. Enter a different email to override.</p>
+            <input
+              type="email"
+              placeholder={order.email}
+              value={emailOverride}
+              onChange={e => setEmailOverride(e.target.value)}
+              className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 text-stone-700"
+            />
+            {emailOverride && emailOverride !== order.email && (
+              <p className="text-xs text-amber-600 mt-1.5">Will send to <strong>{emailOverride}</strong> and update in database.</p>
             )}
           </div>
 

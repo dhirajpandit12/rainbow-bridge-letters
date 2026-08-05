@@ -39,11 +39,11 @@ export async function fetchOrders(token: string, type: 'all' | 'rainbow' | 'soul
   return res.json();
 }
 
-export async function resendOrder(token: string, type: 'rainbow' | 'soul', orderId: string, correctionNote: string, fresh = false): Promise<void> {
+export async function resendOrder(token: string, type: 'rainbow' | 'soul', orderId: string, correctionNote: string, fresh = false, overrideEmail?: string): Promise<void> {
   const res = await fetch(`${API_URL}/admin/resend`, {
     method: 'POST',
     headers: { 'x-admin-token': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, orderId, correctionNote, fresh }),
+    body: JSON.stringify({ type, orderId, correctionNote, fresh, overrideEmail }),
   });
   if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to resend');

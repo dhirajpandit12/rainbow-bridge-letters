@@ -46,7 +46,7 @@ router.get('/orders', async (req, res) => {
 });
 
 router.post('/resend', async (req, res) => {
-  const { type, orderId, correctionNote, fresh } = req.body;
+  const { type, orderId, correctionNote, fresh, overrideEmail } = req.body;
 
   if (!type || !orderId) {
     return res.status(400).json({ error: 'type and orderId are required' });
@@ -78,9 +78,13 @@ router.post('/resend', async (req, res) => {
         await supabase.from('soul_reading_orders').update({ generated_reading: paragraphs, correction_note: correctionNote || null }).eq('id', orderId);
       }
 
+      const toEmail = (overrideEmail && overrideEmail.trim()) ? overrideEmail.trim() : data.email;
+      if (overrideEmail && overrideEmail.trim()) {
+        await supabase.from('soul_reading_orders').update({ email: toEmail }).eq('id', orderId);
+      }
       const pdfBuffer = await generateSoulReadingPdf({ calledYou: data.pet_calls_you, petName: data.pet_name, paragraphs, photoUrl: data.photo_url });
-      await sendSoulReadingEmail({ toEmail: data.email, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
-      console.log(`[Admin] Soul Reading ${isCorrection ? 'corrected' : 'resent'} for order ${orderId}`);
+      await sendSoulReadingEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
+      console.log(`[Admin] Soul Reading ${isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
 
     } else if (type === 'rainbow') {
       const { data, error } = await supabase.from('rainbow_orders').select('*').eq('id', orderId).single();
@@ -101,9 +105,13 @@ router.post('/resend', async (req, res) => {
         await supabase.from('rainbow_orders').update({ generated_letter: letterBody, correction_note: correctionNote || null }).eq('id', orderId);
       }
 
+      const toEmail = (overrideEmail && overrideEmail.trim()) ? overrideEmail.trim() : data.email;
+      if (overrideEmail && overrideEmail.trim()) {
+        await supabase.from('rainbow_orders').update({ email: toEmail }).eq('id', orderId);
+      }
       const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name });
-      await sendRainbowBridgeEmail({ toEmail: data.email, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
-      console.log(`[Admin] Rainbow ${isCorrection ? 'corrected' : 'resent'} for order ${orderId}`);
+      await sendRainbowBridgeEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
+      console.log(`[Admin] Rainbow ${isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
     }
   } catch (err) {
     console.error(`[Admin] Resend failed for order ${orderId}:`, err.message);
