@@ -7,11 +7,10 @@ const adminRouter = require('./routes/admin');
 const { startQueueCron } = require('./cron/processQueue');
 
 const app = express();
-app.use(express.json());
 const PORT = process.env.PORT || 3002;
 
 app.use('/webhook/order-paid', express.raw({ type: 'application/json' }), webhookRouter);
-app.use('/admin', adminRouter);
+app.use('/admin', express.json(), adminRouter);
 
 app.get('/health', (req, res) => res.json({
   status: 'ok',
