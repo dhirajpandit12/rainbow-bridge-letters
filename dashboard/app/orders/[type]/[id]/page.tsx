@@ -42,7 +42,8 @@ export default function OrderDetailPage() {
   const [correctionNote, setCorrectionNote] = useState('');
   const [sending, setSending] = useState(false);
   const [resending, setResending] = useState(false);
-  const [sent, setSent] = useState<'correction' | 'resend' | null>(null);
+  const [freshing, setFreshing] = useState(false);
+  const [sent, setSent] = useState<'correction' | 'resend' | 'fresh' | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -89,6 +90,20 @@ export default function OrderDetailPage() {
       setError(e instanceof Error ? e.message : 'Failed to resend');
     } finally {
       setResending(false);
+    }
+  }
+
+  async function handleFresh() {
+    const token = getToken();
+    if (!token || !order) return;
+    setFreshing(true); setError(''); setSent(null);
+    try {
+      await resendOrder(token, type, order.id, '', true);
+      setSent('fresh');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to generate');
+    } finally {
+      setFreshing(false);
     }
   }
 
@@ -200,23 +215,31 @@ export default function OrderDetailPage() {
             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             {sent === 'correction' && <p className="text-green-600 text-sm mt-2">✓ Correction queued. Regenerated email arriving in ~60 seconds.</p>}
             {sent === 'resend' && <p className="text-green-600 text-sm mt-2">✓ Same email resent. Arriving in ~60 seconds.</p>}
+            {sent === 'fresh' && <p className="text-green-600 text-sm mt-2">✓ Fresh generation queued. New email arriving in ~60 seconds.</p>}
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={handleResendOnly}
-                disabled={resending || sending || !hasContent}
-                className="px-5 py-2.5 bg-stone-700 hover:bg-stone-800 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+                disabled={resending || sending || freshing || !hasContent}
+                className="px-5 py-2.5 bg-stone-600 hover:bg-stone-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
               >
                 {resending ? 'Sending...' : 'Resend as-is'}
               </button>
               <button
+                onClick={handleFresh}
+                disabled={freshing || sending || resending}
+                className="px-5 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                {freshing ? 'Generating...' : 'Generate Fresh'}
+              </button>
+              <button
                 onClick={handleResend}
-                disabled={sending || resending || !correctionNote.trim() || !hasContent}
+                disabled={sending || resending || freshing || !correctionNote.trim() || !hasContent}
                 className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
               >
                 {sending ? 'Sending...' : 'Regenerate & Resend'}
               </button>
             </div>
-            {!hasContent && <p className="text-xs text-stone-400 mt-2">No content saved yet — order needs to complete first.</p>}
+            {!hasContent && <p className="text-xs text-stone-400 mt-2">No content yet — use "Generate Fresh" to create one.</p>}
           </div>
         </div>
 

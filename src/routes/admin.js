@@ -46,14 +46,15 @@ router.get('/orders', async (req, res) => {
 });
 
 router.post('/resend', async (req, res) => {
-  const { type, orderId, correctionNote } = req.body;
+  const { type, orderId, correctionNote, fresh } = req.body;
 
   if (!type || !orderId) {
     return res.status(400).json({ error: 'type and orderId are required' });
   }
 
-  const isCorrection = !!(correctionNote && correctionNote.trim());
-  res.json({ message: isCorrection ? 'Correction queued' : 'Resend queued' });
+  const isFresh = fresh === true;
+  const isCorrection = !isFresh && !!(correctionNote && correctionNote.trim());
+  res.json({ message: isFresh ? 'Fresh generation queued' : isCorrection ? 'Correction queued' : 'Resend queued' });
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -65,14 +66,16 @@ router.post('/resend', async (req, res) => {
 
       let paragraphs = data.generated_reading;
 
-      if (isCorrection) {
+      if (isFresh || isCorrection) {
         const details = {
           petName: data.pet_name, ownerName: data.owner_name, petCallsYou: data.pet_calls_you,
           photoUrl: data.photo_url, species: data.species, lifeStage: data.life_stage,
           personality: data.personality, question: data.question,
         };
-        paragraphs = await generateSoulReading(details, correctionNote, data.generated_reading);
-        await supabase.from('soul_reading_orders').update({ generated_reading: paragraphs, correction_note: correctionNote }).eq('id', orderId);
+        paragraphs = isFresh
+          ? await generateSoulReading(details)
+          : await generateSoulReading(details, correctionNote, data.generated_reading);
+        await supabase.from('soul_reading_orders').update({ generated_reading: paragraphs, correction_note: correctionNote || null }).eq('id', orderId);
       }
 
       const pdfBuffer = await generateSoulReadingPdf({ calledYou: data.pet_calls_you, petName: data.pet_name, paragraphs, photoUrl: data.photo_url });
@@ -86,14 +89,16 @@ router.post('/resend', async (req, res) => {
 
       let letterBody = data.generated_letter;
 
-      if (isCorrection) {
+      if (isFresh || isCorrection) {
         const details = {
           petName: data.pet_name, calledYou: data.called_you, petType: data.pet_type,
           ownerName: data.owner_name, personality: data.personality,
           favoriteMemory: data.favorite_memory, messageToPet: data.message_to_pet,
         };
-        letterBody = await generateLetter(details, correctionNote, data.generated_letter);
-        await supabase.from('rainbow_orders').update({ generated_letter: letterBody, correction_note: correctionNote }).eq('id', orderId);
+        letterBody = isFresh
+          ? await generateLetter(details)
+          : await generateLetter(details, correctionNote, data.generated_letter);
+        await supabase.from('rainbow_orders').update({ generated_letter: letterBody, correction_note: correctionNote || null }).eq('id', orderId);
       }
 
       const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name });
