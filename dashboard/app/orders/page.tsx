@@ -21,7 +21,16 @@ function statusBucket(status: string): StatusFilter {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const date = new Date(d);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+  const sameDay = date.toDateString() === now.toDateString();
+  const yest = new Date(now.getTime() - 86400000).toDateString() === date.toDateString();
+  if (sameDay) return `Today, ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+  if (yest) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function initials(name: string) {
@@ -111,8 +120,23 @@ export default function OrdersPage() {
           </button>
         </div>
 
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
+          {[
+            { label: 'Total', value: counts.all, tint: 'text-stone-800' },
+            { label: 'Completed', value: counts.completed, tint: 'text-green-600' },
+            { label: 'Pending', value: counts.pending + counts.processing, tint: 'text-amber-600' },
+            { label: 'Failed', value: counts.failed, tint: 'text-red-500' },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-stone-200 px-4 py-3">
+              <p className="text-[11px] uppercase tracking-wide text-stone-400">{s.label}</p>
+              <p className={`text-2xl font-semibold mt-0.5 ${s.tint}`}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Filters + search row */}
-        <div className="flex flex-col gap-3 mb-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex gap-1.5 flex-wrap">
             {STATUS_FILTERS.map(s => (
               <button
@@ -145,9 +169,11 @@ export default function OrdersPage() {
         ) : (
           <>
             {/* Result count */}
-            <p className="text-xs text-stone-400 mb-2">
-              Showing {visible.length} of {filtered.length}{search || statusFilter !== 'all' ? ' matching' : ''} orders
-            </p>
+            {(search || statusFilter !== 'all') && (
+              <p className="text-xs text-stone-400 mb-2">
+                {filtered.length} matching order{filtered.length !== 1 ? 's' : ''}
+              </p>
+            )}
 
             {/* Desktop table */}
             <div className="hidden sm:block bg-white rounded-2xl border border-stone-200 overflow-hidden">
@@ -175,6 +201,9 @@ export default function OrdersPage() {
                             {initials(order.pet_name)}
                           </span>
                           <span className="font-medium text-stone-800">{order.pet_name}</span>
+                          {order.correction_note && (
+                            <span title="Has correction note" className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">edited</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-5 py-3 text-stone-600">{order.owner_name}</td>
