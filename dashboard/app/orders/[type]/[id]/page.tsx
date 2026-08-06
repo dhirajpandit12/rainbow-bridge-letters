@@ -57,6 +57,7 @@ export default function OrderDetailPage() {
   const [freshing, setFreshing] = useState(false);
   const [sent, setSent] = useState<'correction' | 'resend' | 'fresh' | null>(null);
   const [error, setError] = useState('');
+  const [showReading, setShowReading] = useState(false);
 
   const load = useCallback(async () => {
     const token = getToken();
@@ -201,37 +202,47 @@ export default function OrderDetailPage() {
         {/* ── Main content ── */}
         <main className="space-y-4">
           {/* Generated content */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-stone-700">
-                {type === 'rainbow' ? 'Generated Letter' : 'Generated Reading'}
-              </h2>
-              {hasContent && <span className="text-[11px] text-stone-400">preview of emailed content</span>}
-            </div>
+          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+            <button
+              onClick={() => setShowReading(v => !v)}
+              disabled={!hasContent}
+              className="w-full flex items-center justify-between px-5 py-4 text-left disabled:cursor-default hover:bg-stone-50 disabled:hover:bg-white transition-colors"
+            >
+              <div>
+                <h2 className="text-sm font-semibold text-stone-700">
+                  {type === 'rainbow' ? 'Generated Letter' : 'Generated Reading'}
+                </h2>
+                <p className="text-[11px] text-stone-400 mt-0.5">
+                  {hasContent ? (showReading ? 'Tap to hide' : 'Tap to preview emailed content') : 'Nothing generated yet'}
+                </p>
+              </div>
+              {hasContent && (
+                <span className={`text-stone-400 text-lg transition-transform ${showReading ? 'rotate-180' : ''}`}>⌄</span>
+              )}
+            </button>
 
-            {!hasContent ? (
-              <div className="text-center py-10">
-                <p className="text-stone-400 text-sm">No content generated yet.</p>
-                <p className="text-stone-300 text-xs mt-1">Use &quot;Generate Fresh&quot; below to create one.</p>
-              </div>
-            ) : type === 'rainbow' ? (
-              <div className="font-serif text-[15px] text-stone-700 leading-[1.85] whitespace-pre-wrap max-w-prose">
-                {order.generated_letter?.split('\n\n').filter(p => p.trim()).map((para, i) => (
-                  <p key={i} className="mb-4">{renderText(para.trim())}</p>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {PARA_KEYS.map(key => {
-                  const text = order.generated_reading?.[key];
-                  if (!text?.trim()) return null;
-                  return (
-                    <div key={key} className="relative pl-4 border-l-2 border-stone-100">
-                      <p className={`text-[10px] font-semibold ${accentLabel} uppercase tracking-wider mb-1.5`}>{PARA_LABELS[key]}</p>
-                      <p className="text-[15px] text-stone-700 leading-[1.8]">{renderText(text)}</p>
-                    </div>
-                  );
-                })}
+            {hasContent && showReading && (
+              <div className="px-5 pb-5 border-t border-stone-100 pt-4">
+                {type === 'rainbow' ? (
+                  <div className="font-serif text-[15px] text-stone-700 leading-[1.85] whitespace-pre-wrap max-w-prose">
+                    {order.generated_letter?.split('\n\n').filter(p => p.trim()).map((para, i) => (
+                      <p key={i} className="mb-4">{renderText(para.trim())}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {PARA_KEYS.map(key => {
+                      const text = order.generated_reading?.[key];
+                      if (!text?.trim()) return null;
+                      return (
+                        <div key={key} className="relative pl-4 border-l-2 border-stone-100">
+                          <p className={`text-[10px] font-semibold ${accentLabel} uppercase tracking-wider mb-1.5`}>{PARA_LABELS[key]}</p>
+                          <p className="text-[15px] text-stone-700 leading-[1.8]">{renderText(text)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -270,33 +281,33 @@ export default function OrderDetailPage() {
       </div>
 
       {/* ── Sticky action bar ── */}
-      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-stone-200">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-          {sent === 'correction' && <p className="text-green-600 text-sm mb-2">✓ Correction queued — regenerated email arriving in ~60 seconds.</p>}
-          {sent === 'resend' && <p className="text-green-600 text-sm mb-2">✓ Same content resent — arriving in ~60 seconds.</p>}
-          {sent === 'fresh' && <p className="text-green-600 text-sm mb-2">✓ Fresh generation queued — new email arriving in ~60 seconds.</p>}
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-stone-200 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+          {error && <p className="text-red-500 text-sm mb-2 text-center sm:text-left">{error}</p>}
+          {sent === 'correction' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Correction queued — regenerated email arriving in ~60 seconds.</p>}
+          {sent === 'resend' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Same content resent — arriving in ~60 seconds.</p>}
+          {sent === 'fresh' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Fresh generation queued — new email arriving in ~60 seconds.</p>}
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end">
             <button
               onClick={handleResendOnly}
               disabled={busy || !hasContent}
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-40 rounded-xl text-sm font-medium transition-colors"
+              className="px-3 sm:px-5 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 disabled:opacity-40 rounded-xl text-xs sm:text-sm font-medium transition-colors"
             >
               {resending ? 'Sending…' : 'Resend as-is'}
             </button>
             <button
               onClick={handleFresh}
               disabled={busy}
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-violet-500 hover:bg-violet-600 text-white disabled:opacity-40 rounded-xl text-sm font-medium transition-colors"
+              className="px-3 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 rounded-xl text-xs sm:text-sm font-medium transition-colors"
             >
               {freshing ? 'Generating…' : 'Generate Fresh'}
             </button>
             <button
               onClick={handleResend}
               disabled={busy || !correctionNote.trim() || !hasContent}
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-40 rounded-xl text-sm font-medium transition-colors"
+              className="px-3 sm:px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 rounded-xl text-xs sm:text-sm font-medium transition-colors"
             >
-              {sending ? 'Sending…' : 'Regenerate & Resend'}
+              {sending ? 'Sending…' : 'Regenerate'}
             </button>
           </div>
         </div>
