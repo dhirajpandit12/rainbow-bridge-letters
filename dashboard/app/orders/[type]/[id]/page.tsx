@@ -74,9 +74,24 @@ export default function OrderDetailPage() {
     }
   }, [router, type, id]);
 
+  // Silent refresh (no loading flicker) — used to pull fresh content after regenerate
+  const refresh = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const data = await fetchOrderById(token, type, id);
+      setOrder(data);
+    } catch { /* ignore */ }
+  }, [type, id]);
+
   useEffect(() => { load(); }, [load]);
 
   const busy = sending || resending || freshing;
+
+  // After a regenerate/fresh, auto-refresh content once the backend has had time to finish (~60s)
+  function scheduleRefresh() {
+    setTimeout(() => { refresh(); }, 65000);
+  }
 
   async function handleResend() {
     const token = getToken();
@@ -85,6 +100,7 @@ export default function OrderDetailPage() {
     try {
       await resendOrder(token, type, order.id, correctionNote, false, emailOverride || undefined);
       setSent('correction');
+      scheduleRefresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to resend');
     } finally {
@@ -113,6 +129,7 @@ export default function OrderDetailPage() {
     try {
       await resendOrder(token, type, order.id, '', true, emailOverride || undefined);
       setSent('fresh');
+      scheduleRefresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to generate');
     } finally {
@@ -133,6 +150,8 @@ export default function OrderDetailPage() {
   if (!order) return null;
 
   const emailChanged = emailOverride.trim() && emailOverride.trim() !== order.email;
+  const isFailed = !['completed', 'pending', 'processing'].includes(order.status);
+  const failReason = isFailed ? order.status.replace(/^failed:\s*/i, '') : '';
 
   return (
     <div className="min-h-screen pb-28">
@@ -144,7 +163,7 @@ export default function OrderDetailPage() {
           <h1 className="text-base font-semibold text-stone-800 truncate">{order.pet_name}</h1>
           <p className="text-xs text-stone-400 truncate">{type === 'rainbow' ? 'Rainbow Bridge' : 'Soul Reading'} · {order.email}</p>
         </div>
-        <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>{order.status}</span>
+        <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>{isFailed ? 'failed' : order.status}</span>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 lg:grid lg:grid-cols-[300px_1fr] lg:gap-6">
@@ -201,6 +220,20 @@ export default function OrderDetailPage() {
 
         {/* ── Main content ── */}
         <main className="space-y-4">
+          {/* Failed reason banner */}
+          {isFailed && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+              <div className="flex items-start gap-2.5">
+                <span className="text-red-500 text-lg leading-none mt-0.5">⚠</span>
+                <div>
+                  <p className="text-sm font-semibold text-red-700">This order failed to send</p>
+                  <p className="text-xs text-red-500 mt-1 break-words">{failReason || 'Unknown error'}</p>
+                  <p className="text-xs text-red-400 mt-2">Use &quot;Generate Fresh&quot; below to retry.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Generated content */}
           <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
             <button
@@ -284,9 +317,9 @@ export default function OrderDetailPage() {
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-stone-200 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           {error && <p className="text-red-500 text-sm mb-2 text-center sm:text-left">{error}</p>}
-          {sent === 'correction' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Correction queued — regenerated email arriving in ~60 seconds.</p>}
+          {sent === 'correction' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Correction queued — email arriving in ~60s, preview will auto-update.</p>}
           {sent === 'resend' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Same content resent — arriving in ~60 seconds.</p>}
-          {sent === 'fresh' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Fresh generation queued — new email arriving in ~60 seconds.</p>}
+          {sent === 'fresh' && <p className="text-green-600 text-sm mb-2 text-center sm:text-left">✓ Fresh generation queued — email arriving in ~60s, preview will auto-update.</p>}
           <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end">
             <button
               onClick={handleResendOnly}

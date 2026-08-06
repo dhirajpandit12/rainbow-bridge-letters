@@ -33,7 +33,8 @@ async function processRainbowOrders() {
       console.log(`[Cron] Generating Rainbow letter for ${details.petName} (order ${order.shopify_order_id})`);
 
       let letterBody;
-      if (order.correction_note && order.generated_letter) {
+      const hasExistingLetter = order.generated_letter && order.generated_letter.trim();
+      if (order.correction_note && hasExistingLetter) {
         letterBody = await generateLetter(details, order.correction_note, order.generated_letter);
       } else {
         letterBody = await generateLetter(details);
@@ -77,7 +78,8 @@ async function processSoulReadingOrders() {
       console.log(`[Cron] Generating Soul Reading for ${details.petName} (order ${order.shopify_order_id})`);
 
       let paragraphs;
-      if (order.correction_note && order.generated_reading) {
+      const hasExistingReading = order.generated_reading && order.generated_reading.PARA_ONE && order.generated_reading.PARA_ONE.trim();
+      if (order.correction_note && hasExistingReading) {
         paragraphs = await generateSoulReading(details, order.correction_note, order.generated_reading);
       } else {
         paragraphs = await generateSoulReading(details);

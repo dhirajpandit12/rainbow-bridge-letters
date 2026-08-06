@@ -72,7 +72,11 @@ export default function OrdersPage() {
   }, [current]);
 
   const filtered = current.filter(o => {
-    if (statusFilter !== 'all' && statusBucket(o.status) !== statusFilter) return false;
+    if (statusFilter !== 'all') {
+      const b = statusBucket(o.status);
+      const match = statusFilter === 'pending' ? (b === 'pending' || b === 'processing') : b === statusFilter;
+      if (!match) return false;
+    }
     if (!search) return true;
     const q = search.toLowerCase();
     return o.pet_name.toLowerCase().includes(q) || o.email.toLowerCase().includes(q) || o.owner_name.toLowerCase().includes(q);
@@ -120,35 +124,36 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-          {[
-            { label: 'Total', value: counts.all, tint: 'text-stone-800' },
-            { label: 'Completed', value: counts.completed, tint: 'text-green-600' },
-            { label: 'Pending', value: counts.pending + counts.processing, tint: 'text-amber-600' },
-            { label: 'Failed', value: counts.failed, tint: 'text-red-500' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl border border-stone-200 px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-stone-400">{s.label}</p>
-              <p className={`text-2xl font-semibold mt-0.5 ${s.tint}`}>{s.value}</p>
-            </div>
-          ))}
+        {/* Stat cards double as filters */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+          {([
+            { key: 'all', label: 'Total', value: counts.all, tint: 'text-stone-800', ring: 'ring-stone-800' },
+            { key: 'completed', label: 'Completed', value: counts.completed, tint: 'text-green-600', ring: 'ring-green-500' },
+            { key: 'pending', label: 'Pending', value: counts.pending + counts.processing, tint: 'text-amber-600', ring: 'ring-amber-500' },
+            { key: 'failed', label: 'Failed', value: counts.failed, tint: 'text-red-500', ring: 'ring-red-500' },
+          ] as const).map(s => {
+            const active = statusFilter === s.key;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className={`text-left bg-white rounded-xl border px-4 py-3 transition-all ${active ? `ring-2 ${s.ring} border-transparent` : 'border-stone-200 hover:border-stone-300'}`}
+              >
+                <p className="text-[11px] uppercase tracking-wide text-stone-400">{s.label}</p>
+                <p className={`text-2xl font-semibold mt-0.5 ${s.tint}`}>{s.value}</p>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Filters + search row */}
-        <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex gap-1.5 flex-wrap">
-            {STATUS_FILTERS.map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${statusFilter === s ? 'bg-stone-800 text-white' : 'bg-white text-stone-500 border border-stone-200 hover:bg-stone-50'}`}
-              >
-                {s} <span className="opacity-60">{counts[s] ?? 0}</span>
-              </button>
-            ))}
-          </div>
-          <div className="relative w-full lg:w-64">
+        {/* Search + processing note */}
+        <div className="flex items-center gap-3 mb-4">
+          {counts.processing > 0 && statusFilter !== 'pending' && (
+            <button onClick={() => setStatusFilter('pending')} className="text-xs text-blue-500 hover:underline shrink-0">
+              {counts.processing} processing
+            </button>
+          )}
+          <div className="relative w-full lg:max-w-xs lg:ml-auto">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">⌕</span>
             <input
               placeholder="Search pet, email, name..."

@@ -97,7 +97,8 @@ router.post('/resend', async (req, res) => {
       }
       const pdfBuffer = await generateSoulReadingPdf({ calledYou: data.pet_calls_you, petName: data.pet_name, paragraphs, photoUrl: data.photo_url });
       await sendSoulReadingEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
-      console.log(`[Admin] Soul Reading ${isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
+      await supabase.from('soul_reading_orders').update({ status: 'completed', processed_at: new Date().toISOString() }).eq('id', orderId);
+      console.log(`[Admin] Soul Reading ${isFresh ? 'freshly generated' : isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
 
     } else if (type === 'rainbow') {
       const { data, error } = await supabase.from('rainbow_orders').select('*').eq('id', orderId).single();
@@ -124,7 +125,8 @@ router.post('/resend', async (req, res) => {
       }
       const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name });
       await sendRainbowBridgeEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
-      console.log(`[Admin] Rainbow ${isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
+      await supabase.from('rainbow_orders').update({ status: 'completed', processed_at: new Date().toISOString() }).eq('id', orderId);
+      console.log(`[Admin] Rainbow ${isFresh ? 'freshly generated' : isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
     }
   } catch (err) {
     console.error(`[Admin] Resend failed for order ${orderId}:`, err.message);
