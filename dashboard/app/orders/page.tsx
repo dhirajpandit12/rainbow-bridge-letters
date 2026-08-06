@@ -107,24 +107,14 @@ export default function OrdersPage() {
 
       <div className="flex-1 min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-stone-200 px-5 sm:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-stone-200 px-4 sm:px-8 py-3 sm:py-4">
+          {/* Desktop */}
+          <div className="hidden lg:flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-                <span className="lg:hidden">{tab === 'rainbow' ? '🌈' : '✨'}</span>
-                {tab === 'rainbow' ? 'Rainbow Bridge' : 'Soul Readings'}
-              </h1>
+              <h1 className="text-lg font-bold text-stone-900">{tab === 'rainbow' ? 'Rainbow Bridge' : 'Soul Readings'}</h1>
               <p className="text-xs text-stone-400 mt-0.5">{current.length} total orders</p>
             </div>
-            {/* Mobile product switch + signout */}
-            <div className="flex items-center gap-2 lg:hidden">
-              <button onClick={() => setTab(tab === 'rainbow' ? 'soul' : 'rainbow')} className="text-xs px-3 py-1.5 rounded-lg bg-stone-100 text-stone-600 font-medium">
-                Switch to {tab === 'rainbow' ? 'Soul' : 'Rainbow'}
-              </button>
-              <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400">Sign out</button>
-            </div>
-            {/* Desktop search */}
-            <div className="relative hidden sm:block w-72">
+            <div className="relative w-72">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">⌕</span>
               <input
                 placeholder="Search pet, email, name..."
@@ -132,6 +122,32 @@ export default function OrdersPage() {
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 bg-stone-50 focus:bg-white transition-colors"
               />
+            </div>
+          </div>
+
+          {/* Mobile */}
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🌈</span>
+                <span className="text-base font-bold text-stone-900">Admin</span>
+              </div>
+              <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700 px-2 py-1">Sign out</button>
+            </div>
+            {/* Segmented tabs */}
+            <div className="flex bg-stone-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setTab('rainbow')}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'rainbow' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
+              >
+                🌈 Rainbow
+              </button>
+              <button
+                onClick={() => setTab('soul')}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'soul' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
+              >
+                ✨ Soul
+              </button>
             </div>
           </div>
         </header>
