@@ -39,6 +39,16 @@ export async function fetchOrders(token: string, type: 'all' | 'rainbow' | 'soul
   return res.json();
 }
 
+export async function fetchOrderById(token: string, type: 'rainbow' | 'soul', id: string): Promise<Order> {
+  const res = await fetch(`${API_URL}/admin/orders/${type}/${id}`, {
+    headers: { 'x-admin-token': token },
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
+  if (res.status === 404) throw new Error('Order not found');
+  if (!res.ok) throw new Error('Failed to fetch order');
+  return res.json();
+}
+
 export async function resendOrder(token: string, type: 'rainbow' | 'soul', orderId: string, correctionNote: string, fresh = false, overrideEmail?: string): Promise<void> {
   const res = await fetch(`${API_URL}/admin/resend`, {
     method: 'POST',

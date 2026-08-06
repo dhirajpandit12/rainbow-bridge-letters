@@ -26,20 +26,33 @@ router.get('/orders', async (req, res) => {
     const results = {};
 
     if (type === 'all' || type === 'rainbow') {
-      let q = supabase.from('rainbow_orders').select('id, pet_name, owner_name, email, status, shopify_order_id, correction_note, created_at, generated_letter, pet_type, called_you, personality, favorite_memory, message_to_pet').order('created_at', { ascending: false });
+      let q = supabase.from('rainbow_orders').select('id, pet_name, owner_name, email, status, shopify_order_id, correction_note, created_at').order('created_at', { ascending: false });
       if (status) q = q.eq('status', status);
       const { data } = await q;
       results.rainbow = data || [];
     }
 
     if (type === 'all' || type === 'soul') {
-      let q = supabase.from('soul_reading_orders').select('id, pet_name, owner_name, email, status, shopify_order_id, correction_note, created_at, generated_reading, pet_calls_you, photo_url, species, life_stage, personality, question').order('created_at', { ascending: false });
+      let q = supabase.from('soul_reading_orders').select('id, pet_name, owner_name, email, status, shopify_order_id, correction_note, created_at').order('created_at', { ascending: false });
       if (status) q = q.eq('status', status);
       const { data } = await q;
       results.soul = data || [];
     }
 
     res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/orders/:type/:id', async (req, res) => {
+  try {
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const { type, id } = req.params;
+    const table = type === 'rainbow' ? 'rainbow_orders' : 'soul_reading_orders';
+    const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
+    if (error || !data) return res.status(404).json({ error: 'Order not found' });
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

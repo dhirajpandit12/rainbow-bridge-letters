@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getToken, clearToken } from '@/lib/auth';
-import { fetchOrders, resendOrder, Order } from '@/lib/api';
+import { fetchOrderById, resendOrder, Order } from '@/lib/api';
 
 const PARA_KEYS = ['PARA_ONE', 'PARA_TWO', 'PARA_THREE', 'PARA_FOUR', 'PARA_FIVE', 'PARA_SIX'];
 const PARA_LABELS: Record<string, string> = {
@@ -51,14 +51,12 @@ export default function OrderDetailPage() {
     const token = getToken();
     if (!token) { router.push('/'); return; }
     try {
-      const data = await fetchOrders(token);
-      const list = type === 'rainbow' ? data.rainbow : data.soul;
-      const found = list.find(o => o.id === id);
-      if (!found) { router.push('/orders'); return; }
-      setOrder(found);
-      if (found.correction_note) setCorrectionNote(found.correction_note);
+      const data = await fetchOrderById(token, type, id);
+      setOrder(data);
+      if (data.correction_note) setCorrectionNote(data.correction_note);
     } catch (e: unknown) {
       if (e instanceof Error && e.message === 'Unauthorized') { clearToken(); router.push('/'); }
+      else router.push('/orders');
     } finally {
       setLoading(false);
     }
