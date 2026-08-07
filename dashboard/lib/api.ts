@@ -39,6 +39,37 @@ export async function fetchOrders(token: string, type: 'all' | 'rainbow' | 'soul
   return res.json();
 }
 
+export interface CreateDetails {
+  email: string;
+  petName: string;
+  ownerName: string;
+  personality?: string;
+  // rainbow
+  petType?: string;
+  calledYou?: string;
+  favoriteMemory?: string;
+  messageToPet?: string;
+  // soul
+  petCallsYou?: string;
+  photoUrl?: string;
+  species?: string;
+  lifeStage?: string;
+  question?: string;
+}
+
+export async function createReading(token: string, type: 'rainbow' | 'soul', details: CreateDetails): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/create`, {
+    method: 'POST',
+    headers: { 'x-admin-token': token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, details }),
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error || 'Failed to create reading');
+  }
+}
+
 export async function fetchOrderById(token: string, type: 'rainbow' | 'soul', id: string): Promise<Order> {
   const res = await fetch(`${API_URL}/admin/orders/${type}/${id}`, {
     headers: { 'x-admin-token': token },

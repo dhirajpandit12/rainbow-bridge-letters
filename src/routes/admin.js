@@ -58,6 +58,80 @@ router.get('/orders/:type/:id', async (req, res) => {
   }
 });
 
+router.post('/create', async (req, res) => {
+  const { type, details } = req.body;
+
+  if (!type || !details || !details.email || !details.petName) {
+    return res.status(400).json({ error: 'type, email and petName are required' });
+  }
+
+  res.json({ message: 'Reading queued, generating and sending in background' });
+
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const manualId = `MANUAL-${Date.now()}`;
+  const now = new Date().toISOString();
+
+  try {
+    if (type === 'soul') {
+      const { data: inserted, error: insErr } = await supabase.from('soul_reading_orders').insert({
+        shopify_order_id: manualId,
+        email: details.email,
+        pet_name: details.petName,
+        owner_name: details.ownerName,
+        pet_calls_you: details.petCallsYou,
+        photo_url: details.photoUrl,
+        species: details.species,
+        life_stage: details.lifeStage,
+        personality: details.personality,
+        question: details.question,
+        status: 'processing',
+        send_after: now,
+      }).select('id').single();
+      if (insErr) throw new Error(`Insert failed: ${insErr.message}`);
+
+      const paragraphs = await generateSoulReading({
+        petName: details.petName, ownerName: details.ownerName, petCallsYou: details.petCallsYou,
+        photoUrl: details.photoUrl, species: details.species, lifeStage: details.lifeStage,
+        personality: details.personality, question: details.question,
+      });
+      const pdfBuffer = await generateSoulReadingPdf({ calledYou: details.petCallsYou, petName: details.petName, paragraphs, photoUrl: details.photoUrl });
+      await sendSoulReadingEmail({ toEmail: details.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
+      await supabase.from('soul_reading_orders').update({ generated_reading: paragraphs, status: 'completed', processed_at: new Date().toISOString() }).eq('id', inserted.id);
+      console.log(`[Admin] Manual Soul Reading created + sent for ${details.email}`);
+
+    } else if (type === 'rainbow') {
+      const { data: inserted, error: insErr } = await supabase.from('rainbow_orders').insert({
+        shopify_order_id: manualId,
+        email: details.email,
+        pet_name: details.petName,
+        called_you: details.calledYou,
+        pet_type: details.petType,
+        owner_name: details.ownerName,
+        personality: details.personality,
+        favorite_memory: details.favoriteMemory,
+        message_to_pet: details.messageToPet,
+        status: 'processing',
+        send_after: now,
+      }).select('id').single();
+      if (insErr) throw new Error(`Insert failed: ${insErr.message}`);
+
+      const letterBody = await generateLetter({
+        petName: details.petName, calledYou: details.calledYou, petType: details.petType,
+        ownerName: details.ownerName, personality: details.personality,
+        favoriteMemory: details.favoriteMemory, messageToPet: details.messageToPet,
+      });
+      const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
+      await sendRainbowBridgeEmail({ toEmail: details.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
+      await supabase.from('rainbow_orders').update({ generated_letter: letterBody, status: 'completed', processed_at: new Date().toISOString() }).eq('id', inserted.id);
+      console.log(`[Admin] Manual Rainbow letter created + sent for ${details.email}`);
+    }
+  } catch (err) {
+    console.error(`[Admin] Manual create failed for ${details.email}:`, err.message);
+    await supabase.from(type === 'soul' ? 'soul_reading_orders' : 'rainbow_orders')
+      .update({ status: `failed: ${err.message}` }).eq('shopify_order_id', manualId);
+  }
+});
+
 router.post('/resend', async (req, res) => {
   const { type, orderId, correctionNote, fresh, overrideEmail } = req.body;
 

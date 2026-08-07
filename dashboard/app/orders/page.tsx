@@ -114,14 +114,17 @@ export default function OrdersPage() {
               <h1 className="text-lg font-bold text-stone-900">{tab === 'rainbow' ? 'Rainbow Bridge' : 'Soul Readings'}</h1>
               <p className="text-xs text-stone-400 mt-0.5">{current.length} total orders</p>
             </div>
-            <div className="relative w-72">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">⌕</span>
-              <input
-                placeholder="Search pet, email, name..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 bg-stone-50 focus:bg-white transition-colors"
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative w-72">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">⌕</span>
+                <input
+                  placeholder="Search pet, email, name..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 bg-stone-50 focus:bg-white transition-colors"
+                />
+              </div>
+              <button onClick={() => router.push('/orders/new')} className="shrink-0 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-sm font-semibold transition-colors">＋ New Reading</button>
             </div>
           </div>
 
@@ -130,7 +133,10 @@ export default function OrdersPage() {
             <div className="flex items-center justify-between mb-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt="Heal Your Inner Peace" className="h-7 w-auto" />
-              <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700 px-2 py-1">Sign out</button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => router.push('/orders/new')} className="text-xs bg-stone-900 text-white px-3 py-1.5 rounded-lg font-medium">＋ New</button>
+                <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700 px-1 py-1">Sign out</button>
+              </div>
             </div>
             {/* Segmented tabs */}
             <div className="flex bg-stone-100 rounded-xl p-1 gap-1">

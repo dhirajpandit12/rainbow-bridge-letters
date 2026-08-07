@@ -37,6 +37,16 @@ export default function Sidebar({ active, onNavigate }: { active?: 'rainbow' | '
             {it.label}
           </button>
         ))}
+
+        <div className="pt-4 mt-4 border-t border-stone-100">
+          <button
+            onClick={() => router.push('/orders/new')}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors"
+          >
+            <span className="text-base">＋</span>
+            New Reading
+          </button>
+        </div>
       </nav>
 
       <div className="px-3 py-4 border-t border-stone-100">
