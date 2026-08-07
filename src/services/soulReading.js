@@ -1,5 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { saveSoulReadingToQueue } = require('./supabase');
+const { fetchImageForVision } = require('./imageFetch');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -140,10 +141,23 @@ Return in EXACTLY this format — nothing else:
     prompt = buildPrompt(details);
   }
 
+  // On a fresh reading (not a correction), pass the pet photo to Claude so the reading
+  // can weave in real visual details. Falls back to text-only on any failure.
+  let content = prompt;
+  if (details.photoUrl && !(correctionNote && existingReading)) {
+    const img = await fetchImageForVision(details.photoUrl);
+    if (img) {
+      content = [
+        { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } },
+        { type: 'text', text: `This is a photo of ${details.petName}. Notice their real appearance (coat color or markings, the look in their eyes, ears, expression) and weave 1-2 specific visual details naturally into the reading so it feels unmistakably about THIS pet. Do not describe the photo or say "in the photo".\n\n${prompt}` },
+      ];
+    }
+  }
+
   const response = await anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4000,
-    messages: [{ role: 'user', content: prompt }],
+    messages: [{ role: 'user', content }],
   });
 
   const raw = response.content[0].text.trim();
