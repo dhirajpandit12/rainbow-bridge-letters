@@ -3,6 +3,7 @@ const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
 const { getInlineFontCss } = require('./fonts');
+const { fetchImageAsDataUrl } = require('./imageFetch');
 
 const BG_IMAGE_PATH = path.join(__dirname, '..', 'templates', 'rainbow-bridge-bg.png');
 
@@ -39,8 +40,12 @@ function splitParagraphsByWordCount(paragraphs) {
   return [paragraphs.slice(0, splitIdx), paragraphs.slice(splitIdx)];
 }
 
-function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss }) {
+function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss, photoDataUrl }) {
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n');
+
+  const photoHtml = (includeSignature && photoDataUrl)
+    ? `<div class="sig-photo"><img src="${photoDataUrl}" alt="${petName}"/></div>`
+    : '';
 
   const greetingHtml = isFirstPage
     ? `<div class="greeting">Dear ${calledYou},<span class="greeting-heart">♥</span></div>`
@@ -85,9 +90,18 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       left: ${CONTENT_SIDE_PADDING}px;
       right: ${CONTENT_SIDE_PADDING}px;
       height: ${SIGNATURE_HEIGHT}px;
-      text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 18px;
       padding-right: 8px;
     }
+    .sig-text { text-align: right; }
+    .sig-photo {
+      width: 84px; height: 84px; border-radius: 50%; overflow: hidden;
+      border: 3px solid #c47d7d; flex-shrink: 0;
+    }
+    .sig-photo img { width: 100%; height: 100%; object-fit: cover; }
     .greeting {
       font-family: 'Dancing Script', cursive;
       font-size: 28px; font-weight: 600; color: #c47d7d; margin-bottom: 18px;
@@ -114,9 +128,12 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
     </div>
     ${includeSignature ? `
     <div class="sig-area">
-      <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
-      <div class="forever-text">Forever Loved. Never Gone.</div>
-      <div class="forever-line"></div>
+      ${photoHtml}
+      <div class="sig-text">
+        <div class="pet-name">${petName}<svg class="paw" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse class="paw-pad" cx="20" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="80" cy="28" rx="11" ry="15"/><ellipse class="paw-pad" cx="6" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="94" cy="58" rx="9" ry="13"/><ellipse class="paw-pad" cx="50" cy="72" rx="30" ry="24"/></svg></div>
+        <div class="forever-text">Forever Loved. Never Gone.</div>
+        <div class="forever-line"></div>
+      </div>
     </div>` : ''}
   </div>
 </body>
@@ -135,11 +152,17 @@ async function mergePdfs(buffers) {
   return Buffer.from(mergedBytes);
 }
 
-async function generatePdf({ calledYou, letterBody, petName }) {
+async function generatePdf({ calledYou, letterBody, petName, photoUrl }) {
   const bgDataUrl = getBgDataUrl();
   const fontCss = await getInlineFontCss();
   const paragraphs = parseParagraphs(letterBody);
   const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs);
+
+  let photoDataUrl = null;
+  if (photoUrl) {
+    photoDataUrl = await fetchImageAsDataUrl(photoUrl);
+    if (!photoDataUrl) console.warn('[RainbowPdf] Could not fetch pet photo, rendering without it');
+  }
 
   const isLocal = process.env.IS_LOCAL === 'true';
   const browser = await puppeteer.launch(isLocal ? {
@@ -170,7 +193,7 @@ async function generatePdf({ calledYou, letterBody, petName }) {
     const pg2 = await browser.newPage();
     await pg2.setContent(buildPageHtml({
       calledYou, paragraphs: page2Paras, petName, bgDataUrl,
-      isFirstPage: false, includeSignature: true, fontCss,
+      isFirstPage: false, includeSignature: true, fontCss, photoDataUrl,
     }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await pg2.evaluate(() => document.fonts.ready);
     pdfBuffers.push(await pg2.pdf({

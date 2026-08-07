@@ -122,7 +122,7 @@ router.post('/create', async (req, res) => {
         favoriteMemory: details.favoriteMemory, messageToPet: details.messageToPet,
         photoUrl: details.photoUrl,
       });
-      const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
+      const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName, photoUrl: details.photoUrl });
       await sendRainbowBridgeEmail({ toEmail: details.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
       await supabase.from('rainbow_orders').update({ generated_letter: letterBody, status: 'completed', processed_at: new Date().toISOString() }).eq('id', inserted.id);
       console.log(`[Admin] Manual Rainbow letter created + sent for ${details.email}`);
@@ -200,7 +200,7 @@ router.post('/resend', async (req, res) => {
       if (overrideEmail && overrideEmail.trim()) {
         await supabase.from('rainbow_orders').update({ email: toEmail }).eq('id', orderId);
       }
-      const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name });
+      const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name, photoUrl: data.photo_url });
       await sendRainbowBridgeEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
       await supabase.from('rainbow_orders').update({ status: 'completed', processed_at: new Date().toISOString() }).eq('id', orderId);
       console.log(`[Admin] Rainbow ${isFresh ? 'freshly generated' : isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);

@@ -42,7 +42,7 @@ async function processRainbowOrders() {
       }
 
       await saveGeneratedLetter(order.id, letterBody);
-      const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
+      const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName, photoUrl: details.photoUrl });
       await sendRainbowBridgeEmail({ toEmail: order.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
       await markOrderProcessed(order.id);
       console.log(`[Cron] Rainbow order ${order.shopify_order_id} completed`);
