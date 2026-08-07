@@ -17,10 +17,10 @@ export default function Sidebar({ active, onNavigate }: { active?: 'rainbow' | '
 
   return (
     <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-stone-200 bg-white h-screen sticky top-0">
-      <div className="px-5 py-5 border-b border-stone-100">
+      <div className="px-5 py-6 border-b border-stone-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Heal Your Inner Peace" className="h-9 w-auto" />
-        <p className="text-[11px] text-stone-400 mt-1.5 pl-0.5">Pets Reading Admin</p>
+        <img src="/logo.png" alt="Heal Your Inner Peace" className="h-8 w-auto" />
+        <p className="text-[11px] text-stone-400 mt-2 pl-0.5 uppercase tracking-wider font-medium">Pets Reading Admin</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
