@@ -128,10 +128,8 @@ export default function OrdersPage() {
           {/* Mobile */}
           <div className="lg:hidden">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🐾</span>
-                <span className="text-base font-bold text-stone-900">Heal Your Inner Peace</span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Heal Your Inner Peace" className="h-7 w-auto" />
               <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700 px-2 py-1">Sign out</button>
             </div>
             {/* Segmented tabs */}

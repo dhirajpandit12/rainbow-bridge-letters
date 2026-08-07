@@ -39,9 +39,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-10 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🐾</div>
-          <h1 className="text-xl font-bold text-stone-800">Heal Your Inner Peace</h1>
-          <p className="text-sm text-stone-400 mt-0.5">Pet Readings Admin</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Heal Your Inner Peace" className="h-12 w-auto mx-auto mb-3" />
+          <p className="text-sm text-stone-400">Pets Reading Admin</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <input
