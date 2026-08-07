@@ -39,9 +39,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-10 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🌈</div>
-          <h1 className="text-xl font-semibold text-stone-800">Rainbow Bridge Admin</h1>
-          <p className="text-sm text-stone-500 mt-1">Sign in to manage orders</p>
+          <div className="text-4xl mb-3">🐾</div>
+          <h1 className="text-xl font-bold text-stone-800">Heal Your Inner Peace</h1>
+          <p className="text-sm text-stone-400 mt-0.5">Pet Readings Admin</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <input
@@ -49,16 +49,16 @@ export default function LoginPage() {
             placeholder="Admin password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
+            className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 bg-stone-50 focus:bg-white transition-colors"
             autoFocus
           />
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+            className="w-full py-3 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 text-white rounded-xl text-sm font-semibold transition-colors"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>

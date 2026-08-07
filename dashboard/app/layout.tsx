@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Rainbow Bridge Admin',
+  title: 'Heal Your Inner Peace — Pet Readings Admin',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -129,8 +129,8 @@ export default function OrdersPage() {
           <div className="lg:hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🌈</span>
-                <span className="text-base font-bold text-stone-900">Admin</span>
+                <span className="text-xl">🐾</span>
+                <span className="text-base font-bold text-stone-900">Heal Your Inner Peace</span>
               </div>
               <button onClick={() => { clearToken(); router.push('/'); }} className="text-xs text-stone-400 hover:text-stone-700 px-2 py-1">Sign out</button>
             </div>
