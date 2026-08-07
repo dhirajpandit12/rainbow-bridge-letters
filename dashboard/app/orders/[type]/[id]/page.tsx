@@ -160,7 +160,7 @@ export default function OrderDetailPage() {
         {/* Sidebar */}
         <aside className="space-y-4 mb-4 lg:mb-0 lg:sticky lg:top-20 lg:self-start">
           <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-            {order.photo_url && type === 'soul' && (
+            {order.photo_url && (
               <img src={order.photo_url} alt={order.pet_name} className="w-full aspect-square object-cover" />
             )}
             <div className="p-5">

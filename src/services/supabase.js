@@ -21,6 +21,7 @@ async function saveOrderToQueue(order, details) {
     personality: details.personality,
     favorite_memory: details.favoriteMemory,
     message_to_pet: details.messageToPet,
+    photo_url: details.photoUrl,
     status: 'pending',
     send_after: sendAfter.toISOString(),
   });

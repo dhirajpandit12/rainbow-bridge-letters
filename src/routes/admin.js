@@ -110,6 +110,7 @@ router.post('/create', async (req, res) => {
         personality: details.personality,
         favorite_memory: details.favoriteMemory,
         message_to_pet: details.messageToPet,
+        photo_url: details.photoUrl,
         status: 'processing',
         send_after: now,
       }).select('id').single();
@@ -119,6 +120,7 @@ router.post('/create', async (req, res) => {
         petName: details.petName, calledYou: details.calledYou, petType: details.petType,
         ownerName: details.ownerName, personality: details.personality,
         favoriteMemory: details.favoriteMemory, messageToPet: details.messageToPet,
+        photoUrl: details.photoUrl,
       });
       const pdfBuffer = await generatePdf({ calledYou: details.calledYou, letterBody, petName: details.petName });
       await sendRainbowBridgeEmail({ toEmail: details.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer });
@@ -186,6 +188,7 @@ router.post('/resend', async (req, res) => {
           petName: data.pet_name, calledYou: data.called_you, petType: data.pet_type,
           ownerName: data.owner_name, personality: data.personality,
           favoriteMemory: data.favorite_memory, messageToPet: data.message_to_pet,
+          photoUrl: data.photo_url,
         };
         letterBody = isFresh
           ? await generateLetter(details)

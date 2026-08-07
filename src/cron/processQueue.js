@@ -27,6 +27,7 @@ async function processRainbowOrders() {
         personality: order.personality,
         favoriteMemory: order.favorite_memory,
         messageToPet: order.message_to_pet,
+        photoUrl: order.photo_url,
       };
 
       await markOrderProcessing(order.id);

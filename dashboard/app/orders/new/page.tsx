@@ -15,6 +15,7 @@ const RAINBOW_FIELDS: Field[] = [
   { key: 'personality', label: 'Personality', type: 'textarea' },
   { key: 'favoriteMemory', label: 'Favorite Memory', type: 'textarea' },
   { key: 'messageToPet', label: 'Message to Pet', type: 'textarea' },
+  { key: 'photoUrl', label: 'Pet Photo URL', hint: 'Optional. Upload to Shopify files and paste the image URL.' },
 ];
 
 const SOUL_FIELDS: Field[] = [
