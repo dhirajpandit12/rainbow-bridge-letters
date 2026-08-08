@@ -15,6 +15,7 @@ const CONTENT_BOTTOM_PADDING_P1 = 180;
 const CONTENT_SIDE_PADDING = 52;
 const COLUMN_GAP = 28;
 const SIGNATURE_HEIGHT = 90;
+const SIGNATURE_HEIGHT_PHOTO = 175;
 
 function getBgDataUrl() {
   const bgImageBase64 = fs.readFileSync(BG_IMAGE_PATH).toString('base64');
@@ -58,8 +59,9 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       <div class="forever-line"></div>
     </div>` : '';
 
+  const sigHeight = photoDataUrl ? SIGNATURE_HEIGHT_PHOTO : SIGNATURE_HEIGHT;
   const textBottom = includeSignature
-    ? CONTENT_BOTTOM_PADDING + SIGNATURE_HEIGHT + 16
+    ? CONTENT_BOTTOM_PADDING + sigHeight + 16
     : (isFirstPage ? CONTENT_BOTTOM_PADDING_P1 : CONTENT_BOTTOM_PADDING);
 
   return `<!DOCTYPE html>
@@ -89,17 +91,18 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       bottom: ${CONTENT_BOTTOM_PADDING}px;
       left: ${CONTENT_SIDE_PADDING}px;
       right: ${CONTENT_SIDE_PADDING}px;
-      height: ${SIGNATURE_HEIGHT}px;
+      height: ${sigHeight}px;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-end;
       justify-content: flex-end;
-      gap: 18px;
+      gap: 10px;
       padding-right: 8px;
     }
     .sig-text { text-align: right; }
     .sig-photo {
-      width: 84px; height: 84px; border-radius: 50%; overflow: hidden;
-      border: 3px solid #c47d7d; flex-shrink: 0;
+      width: 90px; height: 90px; border-radius: 50%; overflow: hidden;
+      border: 3px solid #c47d7d;
     }
     .sig-photo img { width: 100%; height: 100%; object-fit: cover; }
     .greeting {
