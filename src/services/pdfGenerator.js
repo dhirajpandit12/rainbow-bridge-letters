@@ -26,9 +26,9 @@ function parseParagraphs(letterBody) {
   return letterBody.split('\n\n').filter(p => p.trim()).map(p => p.trim().replace(/\n/g, ' '));
 }
 
-function splitParagraphsByWordCount(paragraphs) {
+function splitParagraphsByWordCount(paragraphs, page1Ratio = 0.5) {
   const totalWords = paragraphs.reduce((sum, p) => sum + p.split(' ').length, 0);
-  const target = Math.floor(totalWords * 0.44);
+  const target = Math.floor(totalWords * page1Ratio);
   let count = 0;
   let splitIdx = Math.floor(paragraphs.length / 2);
   for (let i = 0; i < paragraphs.length - 1; i++) {
@@ -39,6 +39,16 @@ function splitParagraphsByWordCount(paragraphs) {
     }
   }
   return [paragraphs.slice(0, splitIdx), paragraphs.slice(splitIdx)];
+}
+
+// Fraction of content that should go on page 1, based on each page's actual text height.
+// Page 1 has no signature; page 2 loses room to the signature (more so when a photo is shown).
+function computePage1Ratio(hasPhoto) {
+  const GREETING_SPACE = 46; // "Dear X," heading only on page 1
+  const sigHeight = hasPhoto ? SIGNATURE_HEIGHT_PHOTO : SIGNATURE_HEIGHT;
+  const page1Height = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING_P1 - GREETING_SPACE;
+  const page2Height = PAGE_HEIGHT - CONTENT_TOP_PADDING - (CONTENT_BOTTOM_PADDING + sigHeight + 16);
+  return page1Height / (page1Height + page2Height);
 }
 
 function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss, photoDataUrl }) {
@@ -159,13 +169,17 @@ async function generatePdf({ calledYou, letterBody, petName, photoUrl }) {
   const bgDataUrl = getBgDataUrl();
   const fontCss = await getInlineFontCss();
   const paragraphs = parseParagraphs(letterBody);
-  const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs);
 
   let photoDataUrl = null;
   if (photoUrl) {
     photoDataUrl = await fetchImageAsDataUrl(photoUrl);
     if (!photoDataUrl) console.warn('[RainbowPdf] Could not fetch pet photo, rendering without it');
   }
+
+  // Split content proportional to each page's real available height (page 2 is smaller
+  // because of the signature/photo), so page 1 fills up and page 2 does not overflow.
+  const page1Ratio = computePage1Ratio(!!photoDataUrl);
+  const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs, page1Ratio);
 
   const isLocal = process.env.IS_LOCAL === 'true';
   const browser = await puppeteer.launch(isLocal ? {
