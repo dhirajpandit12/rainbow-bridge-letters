@@ -1,6 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { saveSoulReadingToQueue } = require('./supabase');
-const { fetchImageForVision } = require('./imageFetch');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -145,24 +144,35 @@ Return in EXACTLY this format — nothing else:
     prompt = buildPrompt(details);
   }
 
-  // On a fresh reading (not a correction), pass the pet photo to Claude so the reading
-  // can weave in real visual details. Falls back to text-only on any failure.
-  let content = prompt;
-  if (details.photoUrl && !(correctionNote && existingReading)) {
-    const img = await fetchImageForVision(details.photoUrl);
-    if (img) {
-      content = [
-        { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } },
-        { type: 'text', text: `This is a photo of ${details.petName}. Notice their real appearance (coat color or markings, the look in their eyes, ears, expression) and weave 1-2 specific visual details naturally into the reading so it feels unmistakably about THIS pet. Do not describe the photo or say "in the photo".\n\n${prompt}` },
-      ];
-    }
-  }
+  // On a fresh reading (not a correction), let Claude see the pet photo so the reading can
+  // weave in real visual details. Passed by URL (Claude fetches and downsamples, avoiding
+  // size limits). Falls back to text-only if the image causes any error.
+  const useImage = !!details.photoUrl && !(correctionNote && existingReading);
 
-  const response = await anthropic.messages.create({
+  const buildContent = (withImage) => withImage
+    ? [
+        { type: 'image', source: { type: 'url', url: details.photoUrl } },
+        { type: 'text', text: `This is a photo of ${details.petName}. Notice their real appearance (coat color or markings, the look in their eyes, ears, expression) and weave 1-2 specific visual details naturally into the reading so it feels unmistakably about THIS pet. Do not describe the photo or say "in the photo".\n\n${prompt}` },
+      ]
+    : prompt;
+
+  const callClaude = (withImage) => anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4000,
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: buildContent(withImage) }],
   });
+
+  let response;
+  try {
+    response = await callClaude(useImage);
+  } catch (err) {
+    if (useImage) {
+      console.warn(`[SoulReading] Photo vision failed, retrying text-only: ${err.message}`);
+      response = await callClaude(false);
+    } else {
+      throw err;
+    }
+  }
 
   const raw = response.content[0].text.trim();
   return parseParagraphs(raw);

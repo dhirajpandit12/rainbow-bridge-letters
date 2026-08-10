@@ -1,6 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { saveOrderToQueue } = require('./supabase');
-const { fetchImageForVision } = require('./imageFetch');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -132,25 +131,37 @@ Please rewrite the letter applying this correction. Keep everything else the sam
 Write the letter body now (do NOT include "Dear ${details.calledYou}," as that is already on the page):`;
   }
 
-  // If a pet photo is available (and not a correction pass), pass it to Claude so the
-  // letter can weave in 1-2 real visual details. Falls back to text-only on any failure.
-  let content = userMessage;
-  if (details.photoUrl && !(correctionNote && existingLetter)) {
-    const img = await fetchImageForVision(details.photoUrl);
-    if (img) {
-      content = [
-        { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } },
-        { type: 'text', text: `This is a photo of ${details.petName}. Weave in 1-2 specific, tender visual details you actually see (coat color or markings, the look in their eyes, ears, expression) so the letter feels unmistakably about THIS pet. Do not describe the photo or say "in the photo" — write as the pet, referencing their own appearance naturally.\n\n${userMessage}` },
-      ];
-    }
-  }
+  // If a pet photo is available (and not a correction pass), let Claude see it so the
+  // letter can weave in 1-2 real visual details. We pass the photo by URL (Claude fetches
+  // and downsamples it, avoiding size limits). If anything about the image fails, we retry
+  // text-only so a bad/oversized photo never fails the whole order.
+  const useImage = !!details.photoUrl && !(correctionNote && existingLetter);
 
-  const response = await anthropic.messages.create({
+  const buildContent = (withImage) => withImage
+    ? [
+        { type: 'image', source: { type: 'url', url: details.photoUrl } },
+        { type: 'text', text: `This is a photo of ${details.petName}. Weave in 1-2 specific, tender visual details you actually see (coat color or markings, the look in their eyes, ears, expression) so the letter feels unmistakably about THIS pet. Do not describe the photo or say "in the photo" — write as the pet, referencing their own appearance naturally.\n\n${userMessage}` },
+      ]
+    : userMessage;
+
+  const callClaude = (withImage) => anthropic.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 4000,
     system: RAINBOW_BRIDGE_PROMPT,
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: buildContent(withImage) }],
   });
+
+  let response;
+  try {
+    response = await callClaude(useImage);
+  } catch (err) {
+    if (useImage) {
+      console.warn(`[Rainbow] Photo vision failed, retrying text-only: ${err.message}`);
+      response = await callClaude(false);
+    } else {
+      throw err;
+    }
+  }
 
   return response.content[0].text
     .trim()
