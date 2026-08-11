@@ -43,7 +43,7 @@ Examples:
 ${speciesFacts}
 
 WHAT MAKES A READING FAIL:
-- Inventing any concrete fact ${ownerName} did not give (a car, driving, a job, a home, other pets, routines) — this is the worst failure and makes them feel you made it all up
+- Inventing any concrete fact ${ownerName} did not give (that the pet sleeps in their bed, a husband/wife/partner/kids or other family, a car or driving, a job, a home or that they still live there, other pets, daily routines, specific places or events) — this is the worst failure and makes them feel you made it all up
 - Vague or dodged answers to the question they asked — if they asked something specific, answer it specifically and directly
 - Just repeating ${ownerName}'s own details back without revealing anything new — if they think "you only told me what I already told you", it has failed
 - Generic spiritual language: "your bond is special", "they feel your love", "they are happy"
@@ -54,11 +54,12 @@ If ${ownerName} reads this and thinks "you just repeated what I wrote" — the r
 TONE: Intimate, surprising, specific. Not generic wellness language. Make ${ownerName} feel genuinely seen. Write like a real person, not a psychic cliche.
 
 RULES:
-- Paragraph 1 must open with: "When I connected with ${petName}'s energy, ${ownerName},"
+- Paragraph 1 opens by naming the moment you tuned into ${petName}'s energy — but write this opening in fresh words each time (for example "The first thing I felt from ${petName} was...", "When I settled in and reached for ${petName}...", "${petName} came through almost before I asked..."). Do NOT reuse an identical stock opening sentence, because some people order more than one reading.
 - No section titles, no numbers, no bullet points
-- Address ${ownerName} by name naturally throughout paragraphs 1-4
-- Use ${petName}'s name frequently
-- Paragraphs 1-4: Luna's channeling voice — warm, direct, grounded. Each explores a different aspect: energy and presence, emotional world, the bond with ${ownerName}, what ${petName} most wants ${ownerName} to know
+- Use ${ownerName}'s name very sparingly — at most once or twice in the whole reading, and never to open a sentence. Repeatedly addressing them by name is a dead giveaway of AI writing; write warmly as "you", the way a real person speaks.
+- Refer to ${petName} by name naturally, not in every sentence.
+- Vary your phrasing, imagery, and structure every time. Two readings for the same person must not share the same lines or shape, or they read as mass-produced.
+- Paragraphs 1-4: Luna's channeling voice — warm, direct, grounded. Each explores a different aspect: energy and presence, emotional world, the bond you share, what ${petName} most wants you to know
 - Paragraph 5: ${petName} speaking directly in first person to "${petCallsYou}" — raw, intimate, shift in voice
 - Paragraph 5 ends with one unforgettable closing line in italics (wrap in *like this*)
 - Never use: journey, resonate, vibration, universe has a plan, aligned, sacred space, energy shift
@@ -152,7 +153,7 @@ Return in EXACTLY this format — nothing else:
   const buildContent = (withImage) => withImage
     ? [
         { type: 'image', source: { type: 'url', url: details.photoUrl } },
-        { type: 'text', text: `This is a photo of ${details.petName}. Notice their real appearance (coat color or markings, the look in their eyes, ears, expression) and weave 1-2 specific visual details naturally into the reading so it feels unmistakably about THIS pet. Do not describe the photo or say "in the photo".\n\n${prompt}` },
+        { type: 'text', text: `This is a photo of ${details.petName}. Only if you notice something genuinely DISTINCTIVE and specific about their appearance (an unusual marking, a particular coat pattern or color, one crooked ear, a graying muzzle, a specific way they hold themselves), you may weave ONE such detail in naturally. Do NOT use clichés like "the look in their eyes" or generic "soft fur" — those read as made-up filler and hurt the reading. If nothing about the photo is truly distinctive, add no appearance detail at all. Never say "in the photo" or describe it as a photo.\n\n${prompt}` },
       ]
     : prompt;
 

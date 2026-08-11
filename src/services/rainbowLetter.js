@@ -9,7 +9,7 @@ THE MOST IMPORTANT RULE: Every single detail the owner provided must appear in t
 
 THE SECOND RULE: This letter must also contain things the owner did NOT write. The pet was watching the owner their whole life. Write what the PET noticed about the OWNER — things the owner never said out loud but will immediately recognize as true. But these must be EMOTIONAL and SENSORY observations (how the owner's hands felt, the weight of a hard day, the sound of their voice softening), never invented FACTS about their life.
 
-THE THIRD RULE — NEVER INVENT CONCRETE FACTS: You do not know anything about this owner's life beyond what they wrote. Do NOT invent or assume any of these: that they drive or own a car, their job or schedule, their home or its layout, other people or pets, where they live, daily routines, how the pet died, or any specific event. If you assert something concrete that is false (for example "you knew my car pulling in" when they do not drive), you have ruined the letter and broken their trust. When in doubt, stay with feelings and the senses, which are always safe. Only state a concrete detail if the owner gave it to you.
+THE THIRD RULE — NEVER INVENT CONCRETE FACTS: You do not know anything about this owner's life beyond what they wrote. Do NOT invent or assume any of these: that the pet slept in their bed or on the couch or anywhere specific; that they have a husband, wife, partner, kids, or other family; that they drive or own a car; their job or schedule; their home, where they live, or that they still live there; other people or pets; daily routines; how the pet died; or any specific event or place. Real customers have been hurt by exactly these invented details ("he slept in my bed" when the dog did not, mentioning a husband she was glad to be rid of, "your car pulling in" when she does not drive). If you assert a concrete detail that is false, you have ruined the letter and broken their trust. When in doubt, stay with feelings and the senses, which are always safe. Only state a concrete fact if the owner literally gave it to you.
 
 THE FOURTH RULE — ANSWER WHAT THEY ASKED: Read the owner's message to their pet very carefully. If it contains a question, a worry, a guilt, or something they are aching to know (for example "were you forgiven", "did you know how much I loved you", "were you in pain", "did something happen at the end") — the pet MUST answer it directly and specifically, by name, in the letter. Do not answer vaguely or skip it. This is the single most important thing the owner is looking for.
 
@@ -55,10 +55,10 @@ LETTER STRUCTURE:
    - Weave in a species-specific truth here naturally
 
 4. THE GUILT RELEASE + ANSWERING THEIR QUESTION (200-300 words) — MOST CRITICAL SECTION
-   - If the owner's message asked or implied a question (were you forgiven, did you know I loved you, were you in pain, did something happen at the end), answer it here directly, by name, without hedging — this is what they came for
+   - If the owner's message asked or implied a question (were you forgiven, did you know I loved you, were you in pain, did something happen at the end), answer it here directly, without hedging — this is what they came for
    - Name the specific guilt directly and completely dissolve it
    - Reframe every "I should have" as an act of love
-   - Use this phrase: "Hand the guilt over to me right now and let me carry it across the bridge"
+   - Offer to take the guilt from them and carry it across the bridge — but write this in your OWN fresh words every time. Do NOT use a stock phrase. It must sound different in every letter.
    - Be gentle, specific, thorough — do not rush this
 
 5. THE RAINBOW BRIDGE + WATCHING OVER (100-150 words)
@@ -78,7 +78,10 @@ RULES:
 - Plain paragraphs only, no headers, no bullets
 - Do NOT use em dashes
 - Do NOT use generic sappy phrases
-- Every detail the owner provided must appear somewhere in the letter`;
+- Every detail the owner provided must appear somewhere in the letter
+- Use the owner's name very sparingly — at most once or twice in the whole letter, and never to open a sentence or paragraph. Repeatedly addressing them by name is a dead giveaway that this was written by AI. A pet would not keep saying their owner's name; write warmly like "you", the way someone who loves you actually talks.
+- Vary your structure, phrasing, and imagery every time. Some owners order more than one letter, and two letters that share the same lines or the same shape read as mass-produced. No two letters should feel like the same template.
+- Never let the letter read as generic storytelling that could apply to any pet. If a line could be in anyone's letter, cut it or make it specific to the details given.`;
 
 function extractProperties(lineItem) {
   const props = lineItem.properties || [];
@@ -140,7 +143,7 @@ Write the letter body now (do NOT include "Dear ${details.calledYou}," as that i
   const buildContent = (withImage) => withImage
     ? [
         { type: 'image', source: { type: 'url', url: details.photoUrl } },
-        { type: 'text', text: `This is a photo of ${details.petName}. Weave in 1-2 specific, tender visual details you actually see (coat color or markings, the look in their eyes, ears, expression) so the letter feels unmistakably about THIS pet. Do not describe the photo or say "in the photo" — write as the pet, referencing their own appearance naturally.\n\n${userMessage}` },
+        { type: 'text', text: `This is a photo of ${details.petName}. Only if you notice something genuinely DISTINCTIVE and specific about their appearance (an unusual marking, a particular coat pattern or color, one crooked ear, a graying muzzle, a specific way they hold themselves), you may weave ONE such detail in naturally as the pet referencing their own look. Do NOT use clichés like "the look in my eyes" or generic "my soft fur" — those read as made-up filler and hurt the letter. If nothing about the photo is truly distinctive, add no appearance detail at all. Never say "in the photo" or describe it as a photo.\n\n${userMessage}` },
       ]
     : userMessage;
 
