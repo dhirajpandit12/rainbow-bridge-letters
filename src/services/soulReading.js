@@ -224,6 +224,11 @@ async function processSoulReadingOrder(order) {
       continue;
     }
 
+    if (!details.petCallsYou) {
+      details.petCallsYou = 'Mom';
+      console.warn(`[SoulReading] No "Pet Calls You" for order ${order.id} — defaulting to "Mom"`);
+    }
+
     if (seenPetNames.has(details.petName.toLowerCase())) {
       console.warn(`[SoulReading] Duplicate pet name "${details.petName}" in order ${order.id} — skipping`);
       continue;

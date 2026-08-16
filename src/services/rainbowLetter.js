@@ -190,9 +190,16 @@ async function processRainbowBridgeOrder(order) {
   for (const lineItem of lineItems) {
     const details = extractProperties(lineItem);
 
-    if (!details.petName || !details.calledYou) {
-      console.warn(`[Rainbow] Missing required pet details for order ${orderId}`);
+    if (!details.petName) {
+      console.warn(`[Rainbow] Missing pet name for order ${orderId} — skipping`);
       continue;
+    }
+
+    // "Called You" is optional on the form. If the customer left it blank, do NOT drop the
+    // order (that silently loses a paid order); default the greeting instead.
+    if (!details.calledYou) {
+      details.calledYou = 'Mom';
+      console.warn(`[Rainbow] No "Called You" for order ${orderId} — defaulting greeting to "Mom"`);
     }
 
     if (seenPetNames.has(details.petName.toLowerCase())) {
