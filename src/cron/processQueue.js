@@ -1,12 +1,15 @@
 const {
   getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed, saveGeneratedLetter,
   getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
+  getPendingSoulBlueprints, markSoulBlueprintProcessing, markSoulBlueprintProcessed, markSoulBlueprintFailed, saveGeneratedBlueprint,
 } = require('../services/supabase');
 const { generateLetter } = require('../services/rainbowLetter');
 const { generatePdf } = require('../services/pdfGenerator');
 const { generateSoulReading } = require('../services/soulReading');
 const { generateSoulReadingPdf } = require('../services/soulReadingPdf');
-const { sendRainbowBridgeEmail, sendSoulReadingEmail } = require('../services/email');
+const { generateBlueprintReading, blueprintFacts } = require('../services/soulBlueprint');
+const { generateSoulBlueprintPdf } = require('../services/soulBlueprintPdf');
+const { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail } = require('../services/email');
 
 async function processRainbowOrders() {
   let orders;
@@ -98,13 +101,58 @@ async function processSoulReadingOrders() {
   }
 }
 
+async function processSoulBlueprintOrders() {
+  let orders;
+  try {
+    orders = await getPendingSoulBlueprints();
+  } catch (err) {
+    console.error('[Cron] Failed to fetch Soul Blueprint orders:', err.message);
+    return;
+  }
+
+  for (const order of orders) {
+    try {
+      const details = {
+        firstName: order.first_name,
+        birthDate: order.birth_date,
+        birthPlace: order.birth_place,
+      };
+
+      await markSoulBlueprintProcessing(order.id);
+      console.log(`[Cron] Generating Soul Blueprint for ${details.firstName} (order ${order.shopify_order_id})`);
+
+      let reading, closing;
+      if (order.generated_reading && order.generated_reading['Your Shape']) {
+        reading = order.generated_reading;
+        closing = order.generated_closing || '';
+      } else {
+        const facts = blueprintFacts(details.firstName, details.birthDate);
+        const result = await generateBlueprintReading(details, facts);
+        reading = result.reading;
+        closing = result.closing;
+        await saveGeneratedBlueprint(order.id, reading, closing);
+      }
+
+      const pdfBuffer = await generateSoulBlueprintPdf({ name: details.firstName, birth: details.birthDate, reading, closing });
+      await sendSoulBlueprintEmail({ toEmail: order.email, firstName: details.firstName, pdfBuffer });
+      await markSoulBlueprintProcessed(order.id);
+      console.log(`[Cron] Soul Blueprint order ${order.shopify_order_id} completed`);
+    } catch (err) {
+      console.error(`[Cron] Soul Blueprint order ${order.shopify_order_id} failed:`, err.message);
+      await markSoulBlueprintFailed(order.id, err.message.slice(0, 100));
+    }
+  }
+}
+
 async function processQueue() {
   await processRainbowOrders();
   await processSoulReadingOrders();
+  await processSoulBlueprintOrders();
 
   const rainbowCount = (await getPendingOrders().catch(() => [])).length;
   const soulCount = (await getPendingSoulReadings().catch(() => [])).length;
-  if (rainbowCount === 0 && soulCount === 0) {
+  const blueprintCount = (await getPendingSoulBlueprints().catch(() => [])).length;
+  if (rainbowCount === 0 && soulCount === 0 && blueprintCount === 0) {
     console.log('[Cron] No orders due yet');
   }
 }

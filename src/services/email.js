@@ -185,4 +185,88 @@ async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer }) 
   }
 }
 
-module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail };
+async function sendSoulBlueprintEmail({ toEmail, firstName, pdfBuffer }) {
+  const name = firstName ? firstName.split(' ')[0] : 'there';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0;padding:0;background-color:#f6f2ea;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f2ea;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+
+          <tr>
+            <td style="background:#0a0a12;border-radius:16px 16px 0 0;padding:40px 40px 32px;text-align:center;">
+              <p style="color:#e9d8a6;font-size:12px;letter-spacing:4px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Your Sacred Geometry</p>
+              <h1 style="color:#e9d8a6;font-size:28px;margin:0 0 6px 0;font-weight:normal;letter-spacing:2px;">Soul Blueprint</h1>
+              <p style="color:#b08a2e;font-size:13px;margin:8px 0 0 0;letter-spacing:1px;font-family:Arial,sans-serif;">Prepared for ${name} ✨</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px;border-left:1px solid #ecdfbf;border-right:1px solid #ecdfbf;">
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Dear ${name},</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                Your <strong>Soul Blueprint</strong> is attached to this email as a keepsake PDF.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                From your name and the day you were born, a sacred geometric portrait took shape, one that belongs to no one else on earth. Inside, I read what its rings, petals, and points reveal about your soul.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                It is prepared at high resolution, so you can print it, frame it, and return to it whenever you need to remember your shape.
+              </p>
+              <p style="color:#a08a5a;font-size:14px;line-height:1.8;margin:24px 0 0 0;font-style:italic;">
+                Made just for you. ✨
+              </p>
+              <p style="color:#c0b088;font-size:12px;line-height:1.6;margin:16px 0 0 0;">
+                If this email landed in your Promotions tab, please move it to your inbox.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#faf6ee;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:1px solid #ecdfbf;border-left:1px solid #ecdfbf;border-right:1px solid #ecdfbf;border-bottom:1px solid #ecdfbf;">
+              <p style="color:#b08a2e;font-size:15px;margin:0;font-family:Georgia,serif;">Luna Everly · Heal Your Inner Peace</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const emailPayload = {
+      from: process.env.FROM_EMAIL,
+      to: toEmail,
+      subject: `${name}, your Soul Blueprint has arrived ✨`,
+      html,
+      attachments: [
+        {
+          filename: `${name}-soul-blueprint.pdf`,
+          content: Buffer.from(pdfBuffer).toString('base64'),
+        },
+      ],
+    };
+
+    if (process.env.ADMIN_BCC_EMAIL) {
+      emailPayload.bcc = process.env.ADMIN_BCC_EMAIL;
+    }
+
+    await resend.emails.send(emailPayload);
+    console.log(`[Email] Soul Blueprint sent to ${toEmail}`);
+  } catch (err) {
+    console.error('[Email] Failed to send Soul Blueprint email:', err.message);
+    throw err;
+  }
+}
+
+module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail };

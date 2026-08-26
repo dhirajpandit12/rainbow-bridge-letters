@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { isRainbowBridgeOrder, processRainbowBridgeOrder } = require('../services/rainbowLetter');
 const { isSoulReadingOrder, processSoulReadingOrder } = require('../services/soulReading');
+const { isSoulBlueprintOrder, processSoulBlueprintOrder } = require('../services/soulBlueprint');
 
 const router = express.Router();
 
@@ -61,6 +62,14 @@ router.post('/', async (req, res) => {
     console.log(`[Webhook] Soul Reading order received for ${email}`);
     processSoulReadingOrder(order).catch(err => {
       console.error(`[SoulReading] Processing failed for ${email}:`, err.message);
+    });
+  }
+
+  if (isSoulBlueprintOrder(order)) {
+    recognized = true;
+    console.log(`[Webhook] Soul Blueprint order received for ${email}`);
+    processSoulBlueprintOrder(order).catch(err => {
+      console.error(`[SoulBlueprint] Processing failed for ${email}:`, err.message);
     });
   }
 
