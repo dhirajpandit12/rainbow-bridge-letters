@@ -152,8 +152,8 @@ async function markSoulReadingFailed(id, reason) {
 }
 
 async function saveSoulBlueprintToQueue(order, details) {
-  const minHours = process.env.INSTANT_SEND === 'true' ? 0 : 1;
-  const maxHours = process.env.INSTANT_SEND === 'true' ? 0 : 8;
+  const minHours = process.env.INSTANT_SEND === 'true' ? 0 : 6;
+  const maxHours = process.env.INSTANT_SEND === 'true' ? 0 : 12;
   const hours = minHours + Math.random() * (maxHours - minHours);
   const sendAfter = new Date(Date.now() + hours * 60 * 60 * 1000);
 
