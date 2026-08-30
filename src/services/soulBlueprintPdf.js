@@ -7,7 +7,7 @@ const { buildSVG, soulNumber, PALETTES } = require('./blueprint-generator');
 const { buildKeepsakePDF } = require('./keepsake-pdfkit');
 
 // Generates the keepsake PDF and returns it as a Buffer. Cleans up temp files.
-async function generateSoulBlueprintPdf({ name, birth, reading, closing }) {
+async function generateSoulBlueprintPdf({ name, birth, reading, closing, intention }) {
   const g = soulNumber(name, birth);
   const pal = PALETTES[g.month];
 
@@ -23,7 +23,8 @@ async function generateSoulBlueprintPdf({ name, birth, reading, closing }) {
   try {
     const meta = `SOUL NUMBER ${g.reduced}  ·  ${pal.name.toUpperCase()}  ·  ${g.pattern.toUpperCase()}`;
     const frameMeta = `SOUL NUMBER ${g.reduced}  ·  ${pal.name.toUpperCase()}`;
-    await buildKeepsakePDF({ name, meta, frameMeta, imagePath: pngPath, reading, closing, outPath: pdfPath });
+    const focus = intention && intention.trim() ? `FOCUSED TOWARD  ·  ${intention.trim().toUpperCase()}` : null;
+    await buildKeepsakePDF({ name, meta, frameMeta, focus, imagePath: pngPath, reading, closing, outPath: pdfPath });
     const buffer = fs.readFileSync(pdfPath);
     return buffer;
   } finally {

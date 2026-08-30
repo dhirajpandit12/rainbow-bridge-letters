@@ -4,7 +4,7 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
-function buildKeepsakePDF({ name, meta, frameMeta, imagePath, reading, closing, outPath }) {
+function buildKeepsakePDF({ name, meta, frameMeta, focus, imagePath, reading, closing, outPath }) {
   const doc = new PDFDocument({ size: "A4", margin: 0 });
   const stream = fs.createWriteStream(outPath);
   doc.pipe(stream);
@@ -26,6 +26,11 @@ function buildKeepsakePDF({ name, meta, frameMeta, imagePath, reading, closing, 
     .text(name.toUpperCase(), 0, imgY + imgW + 24, { align: "center", characterSpacing: 6 });
   doc.fontSize(9).fillColor(GOLD)
     .text(meta, 0, imgY + imgW + 58, { align: "center", characterSpacing: 3 });
+  if (focus) {
+    doc.fontSize(8).fillColor(GOLD_L).opacity(0.75)
+      .text(focus, 0, imgY + imgW + 76, { align: "center", characterSpacing: 3 })
+      .opacity(1);
+  }
   doc.fontSize(8).fillColor(GOLD_L).opacity(0.6)
     .text("PREPARED BY LUNA EVERLY", 0, H - 70, { align: "center", characterSpacing: 5 })
     .opacity(1);

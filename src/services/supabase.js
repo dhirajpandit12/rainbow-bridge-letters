@@ -163,6 +163,7 @@ async function saveSoulBlueprintToQueue(order, details) {
     first_name: details.firstName,
     birth_date: details.birthDate,
     birth_place: details.birthPlace || null,
+    intention: details.intention || null,
     status: 'pending',
     send_after: sendAfter.toISOString(),
   });

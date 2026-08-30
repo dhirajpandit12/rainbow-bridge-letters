@@ -116,6 +116,7 @@ async function processSoulBlueprintOrders() {
         firstName: order.first_name,
         birthDate: order.birth_date,
         birthPlace: order.birth_place,
+        intention: order.intention,
       };
 
       await markSoulBlueprintProcessing(order.id);
@@ -133,7 +134,7 @@ async function processSoulBlueprintOrders() {
         await saveGeneratedBlueprint(order.id, reading, closing);
       }
 
-      const pdfBuffer = await generateSoulBlueprintPdf({ name: details.firstName, birth: details.birthDate, reading, closing });
+      const pdfBuffer = await generateSoulBlueprintPdf({ name: details.firstName, birth: details.birthDate, reading, closing, intention: details.intention });
       await sendSoulBlueprintEmail({ toEmail: order.email, firstName: details.firstName, pdfBuffer });
       await markSoulBlueprintProcessed(order.id);
       console.log(`[Cron] Soul Blueprint order ${order.shopify_order_id} completed`);
