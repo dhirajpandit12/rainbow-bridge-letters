@@ -179,10 +179,109 @@ Return in EXACTLY this format — nothing else:
   return parseParagraphs(raw);
 }
 
+// Monthly check-in reading for a subscription (reading 2 onward). This is NOT a first
+// introduction — it is an ongoing monthly connection, steered by either the owner's
+// question for the month or, if none, a rotating focus theme.
+function buildMonthlyPrompt(details, { monthNumber, question, theme }) {
+  const { ownerName, petName, petCallsYou, species, lifeStage, personality } = details;
+  const focusLine = question
+    ? `This month ${ownerName} asked: "${question}". Center the reading on answering this specifically and directly.`
+    : `This month, focus the reading on: ${theme}.`;
+
+  return `You are Luna Everly, an intuitive animal communicator. You have read ${petName}'s soul before — this is a MONTHLY check-in for ${ownerName}, whose ${species} ${petName} calls them "${petCallsYou}". This is not a first meeting. Write like you are tuning back into a soul you already know, sharing what has shifted and what is alive for ${petName} right now, this month.
+
+${personality ? `What ${ownerName} shared about ${petName}: ${personality}` : ''}
+Life stage: ${lifeStage}
+
+${focusLine}
+
+RULES:
+- Open by tuning back into ${petName} for this month — fresh words each time, never a stock opening. Reference that time has passed / a new month.
+- Every paragraph must contain something specific and felt, not generic. If a line could apply to any pet, cut it.
+- Do NOT invent concrete facts about ${ownerName}'s life you were not given (no home, family, job, other pets, routines). Stay with feelings and the senses.
+- Use ${ownerName}'s name sparingly (once or twice), never to open a sentence. Overusing it reads as AI.
+- Answer the month's focus or question directly and specifically.
+- Warm, grounded, real — not a generic horoscope. Never mention AI.
+- Do NOT use em dashes.
+- Never use: journey, resonate, vibration, aligned, sacred space, energy shift.
+
+LENGTHS: Paragraphs 1-4 are 120-140 words each — tight, no filler. Paragraph 5 is 180-220 words, ${petName} speaking directly in first person to "${petCallsYou}", ending with one line in italics (wrap in *like this*).
+
+FORMAT exactly — nothing else:
+
+---PARA_ONE---
+[content]
+
+---PARA_TWO---
+[content]
+
+---PARA_THREE---
+[content]
+
+---PARA_FOUR---
+[content]
+
+---PARA_FIVE---
+[content]
+
+---END---`;
+}
+
+async function generateMonthlyReading(details, ctx) {
+  const prompt = buildMonthlyPrompt(details, ctx);
+
+  const useImage = !!details.photoUrl;
+  const buildContent = (withImage) => withImage
+    ? [
+        { type: 'image', source: { type: 'url', url: details.photoUrl } },
+        { type: 'text', text: `This is a photo of ${details.petName}. Only if something is genuinely distinctive about their appearance, you may weave ONE such detail in naturally. Avoid clichés. Never say "in the photo".\n\n${prompt}` },
+      ]
+    : prompt;
+
+  const callClaude = (withImage) => anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 3500,
+    messages: [{ role: 'user', content: buildContent(withImage) }],
+  });
+
+  let response;
+  try {
+    response = await callClaude(useImage);
+  } catch (err) {
+    if (useImage) {
+      console.warn(`[SoulReading] Monthly photo vision failed, retrying text-only: ${err.message}`);
+      response = await callClaude(false);
+    } else {
+      throw err;
+    }
+  }
+  return parseParagraphs(response.content[0].text.trim());
+}
+
+// Rotating monthly focus themes (used when the owner did not submit a question).
+const MONTHLY_THEMES = [
+  "how your pet is feeling this month — their current emotional weather and what is on their heart",
+  "the bond between you right now, and what it means to your pet in this season of life",
+  "one thing your pet quietly wishes for more of in daily life",
+  "a small worry or sensitivity your pet is carrying lately, and how to gently ease it",
+  "your pet's favorite part of life with you right now",
+  "how your pet has been changing or growing lately, and what they are learning",
+  "what your pet notices about you that you may not see in yourself",
+  "your pet's most playful, joyful side this month",
+];
+
+function themeForMonth(monthNumber) {
+  // monthNumber is 2 for the first monthly follow-up; map to a rotating theme.
+  const idx = (monthNumber - 2) % MONTHLY_THEMES.length;
+  return MONTHLY_THEMES[(idx + MONTHLY_THEMES.length) % MONTHLY_THEMES.length];
+}
+
 function isSoulReadingOrder(order) {
   const lineItems = order.line_items || [];
   return lineItems.some(item => {
     const title = (item.title || '').toLowerCase();
+    // Exclude the monthly subscription product so it is not treated as a one-time reading.
+    if (title.includes('monthly')) return false;
     return title.includes('pet soul reading') || title.includes('soul reading');
   });
 }
@@ -239,4 +338,4 @@ async function processSoulReadingOrder(order) {
   }
 }
 
-module.exports = { isSoulReadingOrder, processSoulReadingOrder, generateSoulReading };
+module.exports = { isSoulReadingOrder, processSoulReadingOrder, generateSoulReading, generateMonthlyReading, themeForMonth };

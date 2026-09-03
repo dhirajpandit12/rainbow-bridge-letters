@@ -2,10 +2,11 @@ const {
   getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed, saveGeneratedLetter,
   getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
   getPendingSoulBlueprints, markSoulBlueprintProcessing, markSoulBlueprintProcessed, markSoulBlueprintFailed, saveGeneratedBlueprint,
+  getPendingSubscriptionReadings, markSubscriptionReadingProcessing, markSubscriptionReadingProcessed, markSubscriptionReadingFailed, advanceSubscription,
 } = require('../services/supabase');
 const { generateLetter } = require('../services/rainbowLetter');
 const { generatePdf } = require('../services/pdfGenerator');
-const { generateSoulReading } = require('../services/soulReading');
+const { generateSoulReading, generateMonthlyReading, themeForMonth } = require('../services/soulReading');
 const { generateSoulReadingPdf } = require('../services/soulReadingPdf');
 const { generateBlueprintReading, blueprintFacts } = require('../services/soulBlueprint');
 const { generateSoulBlueprintPdf } = require('../services/soulBlueprintPdf');
@@ -145,10 +146,58 @@ async function processSoulBlueprintOrders() {
   }
 }
 
+async function processSubscriptionReadings() {
+  let jobs;
+  try {
+    jobs = await getPendingSubscriptionReadings();
+  } catch (err) {
+    console.error('[Cron] Failed to fetch subscription readings:', err.message);
+    return;
+  }
+
+  for (const job of jobs) {
+    const sub = job.soul_subscriptions;
+    if (!sub) { await markSubscriptionReadingFailed(job.id, 'subscription missing'); continue; }
+    try {
+      const details = {
+        petName: sub.pet_name, ownerName: sub.owner_name, petCallsYou: sub.pet_calls_you,
+        photoUrl: sub.photo_url, species: sub.species, lifeStage: sub.life_stage, personality: sub.personality,
+      };
+      const monthNumber = job.month_number || (sub.reading_count || 0) + 1;
+      const question = (sub.pending_question || '').trim();
+
+      await markSubscriptionReadingProcessing(job.id);
+      console.log(`[Cron] Generating month ${monthNumber} reading for ${details.petName} (${sub.email})`);
+
+      let paragraphs;
+      if (monthNumber === 1) {
+        // First reading: full introductory soul reading, using their first question if given.
+        paragraphs = await generateSoulReading({ ...details, question });
+      } else {
+        // Monthly check-in: their question if submitted, else the month's rotating theme.
+        const theme = question ? null : themeForMonth(monthNumber);
+        paragraphs = await generateMonthlyReading(details, { monthNumber, question: question || null, theme });
+      }
+
+      const askLink = process.env.DASHBOARD_URL ? `${process.env.DASHBOARD_URL}/ask/${sub.question_token}` : null;
+      const pdfBuffer = await generateSoulReadingPdf({ calledYou: details.petCallsYou, petName: details.petName, paragraphs, photoUrl: details.photoUrl });
+      await sendSoulReadingEmail({ toEmail: sub.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer, askLink });
+
+      await markSubscriptionReadingProcessed(job.id, paragraphs);
+      await advanceSubscription(sub.id, monthNumber);
+      console.log(`[Cron] Subscription month ${monthNumber} sent for ${details.petName}`);
+    } catch (err) {
+      console.error(`[Cron] Subscription reading ${job.id} failed:`, err.message);
+      await markSubscriptionReadingFailed(job.id, err.message.slice(0, 100));
+    }
+  }
+}
+
 async function processQueue() {
   await processRainbowOrders();
   await processSoulReadingOrders();
   await processSoulBlueprintOrders();
+  await processSubscriptionReadings();
 
   const rainbowCount = (await getPendingOrders().catch(() => [])).length;
   const soulCount = (await getPendingSoulReadings().catch(() => [])).length;

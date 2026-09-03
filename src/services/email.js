@@ -95,8 +95,29 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
   }
 }
 
-async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer }) {
+async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer, askLink }) {
   const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
+
+  // For subscription readings: invite the owner to submit a question for next month.
+  const askRow = askLink ? `
+          <tr>
+            <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
+              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Your next reading</p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">Is there something you'd love to ask <strong>${petName}</strong> next month? Share it and Luna will centre ${petName}'s next reading on it.</p>
+              <a href="${askLink}" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Ask ${petName} a question</a>
+            </td>
+          </tr>` : '';
+
+  // Rainbow Bridge cross-sell only on standalone (non-subscription) readings.
+  const crossSellRow = askLink ? '' : `
+          <tr>
+            <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
+              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">For the pets you've lost</p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">Has a beloved pet passed on? Give them a final voice with a <strong>Rainbow Bridge Letter</strong>, written from their perspective, just for you.</p>
+              <a href="https://www.healyourinnerpeace.com/products/rainbow-bridge-letter" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Get a Rainbow Bridge Letter</a>
+              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">Use code <strong style="color:#c47d7d;">RAINBOW10</strong> for 10% off.</p>
+            </td>
+          </tr>`;
 
   const html = `
 <!DOCTYPE html>
@@ -137,14 +158,7 @@ async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer }) 
             </td>
           </tr>
 
-          <tr>
-            <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
-              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">For the pets you've lost</p>
-              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">Has a beloved pet passed on? Give them a final voice with a <strong>Rainbow Bridge Letter</strong>, written from their perspective, just for you.</p>
-              <a href="https://www.healyourinnerpeace.com/products/rainbow-bridge-letter" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Get a Rainbow Bridge Letter</a>
-              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">Use code <strong style="color:#c47d7d;">RAINBOW10</strong> for 10% off.</p>
-            </td>
-          </tr>
+          ${askRow}${crossSellRow}
 
           <tr>
             <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">

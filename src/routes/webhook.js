@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { isRainbowBridgeOrder, processRainbowBridgeOrder } = require('../services/rainbowLetter');
 const { isSoulReadingOrder, processSoulReadingOrder } = require('../services/soulReading');
 const { isSoulBlueprintOrder, processSoulBlueprintOrder } = require('../services/soulBlueprint');
+const { isMonthlySubscriptionOrder, processSubscriptionOrder } = require('../services/soulSubscription');
 
 const router = express.Router();
 
@@ -57,7 +58,13 @@ router.post('/', async (req, res) => {
     });
   }
 
-  if (isSoulReadingOrder(order)) {
+  if (isMonthlySubscriptionOrder(order)) {
+    recognized = true;
+    console.log(`[Webhook] Monthly Soul Reading subscription order received for ${email}`);
+    processSubscriptionOrder(order).catch(err => {
+      console.error(`[Subscription] Processing failed for ${email}:`, err.message);
+    });
+  } else if (isSoulReadingOrder(order)) {
     recognized = true;
     console.log(`[Webhook] Soul Reading order received for ${email}`);
     processSoulReadingOrder(order).catch(err => {

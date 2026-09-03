@@ -4,21 +4,26 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 const webhookRouter = require('./routes/webhook');
 const adminRouter = require('./routes/admin');
+const subscriptionRouter = require('./routes/subscription');
 const { startQueueCron } = require('./cron/processQueue');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-app.use('/admin', (req, res, next) => {
+const cors = (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-token');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
-});
+};
+
+app.use('/admin', cors);
+app.use('/subscription', cors);
 
 app.use('/webhook/order-paid', express.raw({ type: 'application/json' }), webhookRouter);
 app.use('/admin', express.json(), adminRouter);
+app.use('/subscription', express.json(), subscriptionRouter);
 
 app.get('/health', (req, res) => res.json({
   status: 'ok',
