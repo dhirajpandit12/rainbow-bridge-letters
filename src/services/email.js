@@ -283,4 +283,76 @@ async function sendSoulBlueprintEmail({ toEmail, firstName, pdfBuffer }) {
   }
 }
 
-module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail };
+// Marketing invite to existing Soul Reading customers: join the monthly subscription.
+async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubUrl }) {
+  const name = firstName || 'there';
+  const pet = petName || 'your pet';
+  const product = 'https://www.healyourinnerpeace.com/products/pet-soul-reading-monthly';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0;padding:0;background-color:#fdf8f4;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f4;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+
+          <tr>
+            <td style="background:#fff7f2;border-radius:16px 16px 0 0;padding:36px 40px 28px;text-align:center;border-bottom:2px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:12px;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">From Luna Everly</p>
+              <h1 style="color:#3a2e2a;font-size:26px;margin:0;font-weight:normal;">A monthly connection with ${pet} 🐾</h1>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;">
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Dear ${name},</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                Not long ago I tuned into ${pet}'s soul and channeled a reading for you. Something you may not realize is that ${pet}'s inner world keeps shifting: their moods, their needs, the little things weighing on their heart all change with the seasons.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                That is why I created the <strong>Monthly Pet Soul Reading</strong>. Every month I reconnect with ${pet} and send you a fresh reading of what is alive for them right now. And each month, you can ask ${pet} a question of your own, and I will centre their next reading on it.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 26px 0;">
+                It is an ongoing conversation with the soul of the one you love most.
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="border-radius:8px;background:#c47d7d;">
+                <a href="${product}" style="display:inline-block;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:15px 34px;border-radius:8px;">Begin ${pet}'s Monthly Reading</a>
+              </td></tr></table>
+              <p style="color:#a08070;font-size:14px;line-height:1.8;margin:26px 0 0 0;font-style:italic;">With love and light. 🌟</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:22px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:15px;margin:0 0 10px 0;font-family:Georgia,serif;">Heal Your Inner Peace</p>
+              <p style="color:#c0a898;font-size:11px;margin:0;font-family:Arial,sans-serif;line-height:1.6;">
+                You are receiving this because you previously ordered a Pet Soul Reading.<br/>
+                <a href="${unsubUrl}" style="color:#a08070;text-decoration:underline;">Unsubscribe from these emails</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const payload = {
+    from: process.env.FROM_EMAIL,
+    to: toEmail,
+    subject: `${name}, a monthly connection with ${pet}`,
+    html,
+  };
+  if (unsubUrl) payload.headers = { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
+  await resend.emails.send(payload);
+}
+
+module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail, sendSubscriptionInviteEmail };

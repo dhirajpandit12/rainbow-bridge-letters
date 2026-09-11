@@ -5,6 +5,7 @@ const express = require('express');
 const webhookRouter = require('./routes/webhook');
 const adminRouter = require('./routes/admin');
 const subscriptionRouter = require('./routes/subscription');
+const campaignRouter = require('./routes/campaign');
 const { startQueueCron } = require('./cron/processQueue');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/subscription', cors);
 app.use('/webhook/order-paid', express.raw({ type: 'application/json' }), webhookRouter);
 app.use('/admin', express.json(), adminRouter);
 app.use('/subscription', express.json(), subscriptionRouter);
+app.use('/campaign', campaignRouter);
 
 app.get('/health', (req, res) => res.json({
   status: 'ok',

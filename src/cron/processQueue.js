@@ -199,6 +199,17 @@ async function processQueue() {
   await processSoulBlueprintOrders();
   await processSubscriptionReadings();
 
+  // Marketing drip: invite past customers to the monthly subscription (~50/day).
+  // Only runs when explicitly turned on, so it never sends by accident.
+  if (process.env.CAMPAIGN_ACTIVE === 'true') {
+    try {
+      const { sendDailyBatch } = require('../services/campaign');
+      await sendDailyBatch();
+    } catch (err) {
+      console.error('[Campaign] Daily batch error:', err.message);
+    }
+  }
+
   const rainbowCount = (await getPendingOrders().catch(() => [])).length;
   const soulCount = (await getPendingSoulReadings().catch(() => [])).length;
   const blueprintCount = (await getPendingSoulBlueprints().catch(() => [])).length;
