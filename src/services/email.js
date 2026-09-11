@@ -108,6 +108,17 @@ async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer, as
             </td>
           </tr>` : '';
 
+  // Monthly subscription invite on standalone (non-subscription) readings.
+  const monthlyRow = askLink ? '' : `
+          <tr>
+            <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
+              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Reconnect every month</p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">${petName}'s heart, mood, and needs keep changing. With <strong>Pet Soul Reading, Monthly</strong> you receive a fresh reading every month, and you can ask ${petName} a new question each time.</p>
+              <a href="https://www.healyourinnerpeace.com/products/pet-soul-reading-monthly?variant=54013916021036&selling_plan=695517053228" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Start ${petName}'s Monthly Reading</a>
+              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">$13.99/month. Cancel anytime.</p>
+            </td>
+          </tr>`;
+
   // Rainbow Bridge cross-sell only on standalone (non-subscription) readings.
   const crossSellRow = askLink ? '' : `
           <tr>
@@ -158,7 +169,7 @@ async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer, as
             </td>
           </tr>
 
-          ${askRow}${crossSellRow}
+          ${askRow}${monthlyRow}${crossSellRow}
 
           <tr>
             <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
@@ -287,7 +298,7 @@ async function sendSoulBlueprintEmail({ toEmail, firstName, pdfBuffer }) {
 async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubUrl }) {
   const name = firstName || 'there';
   const pet = petName || 'your pet';
-  const product = 'https://www.healyourinnerpeace.com/products/pet-soul-reading-monthly';
+  const product = 'https://www.healyourinnerpeace.com/products/pet-soul-reading-monthly?variant=54013916021036&selling_plan=695517053228';
 
   const html = `
 <!DOCTYPE html>
@@ -311,20 +322,37 @@ async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubU
 
           <tr>
             <td style="background:#ffffff;padding:36px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;">
-              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Dear ${name},</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Hi,</p>
               <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
-                Not long ago I tuned into ${pet}'s soul and channeled a reading for you. Something you may not realize is that ${pet}'s inner world keeps shifting: their moods, their needs, the little things weighing on their heart all change with the seasons.
+                You've received a reading from us before, but what if you could reconnect with your pet every month? ❤️🐾
               </p>
               <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
-                That is why I created the <strong>Monthly Pet Soul Reading</strong>. Every month I reconnect with ${pet} and send you a fresh reading of what is alive for them right now. And each month, you can ask ${pet} a question of your own, and I will centre their next reading on it.
+                We've just introduced our <strong>Pet Soul Reading, Monthly</strong>.
               </p>
-              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 26px 0;">
-                It is an ongoing conversation with the soul of the one you love most.
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                Instead of receiving just one reading, you'll receive a fresh personalized reading every month, tuned to where your pet's heart, mood, and energy are right now.
+              </p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.8;margin:0 0 8px 0;">✨ Each month's reading includes:</p>
+              <ul style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;padding-left:22px;">
+                <li>What your pet is feeling right now</li>
+                <li>Their current needs, emotions, and energy</li>
+                <li>Their hidden wishes</li>
+                <li>An answer to a new question you can ask</li>
+                <li>A personal message from their heart</li>
+              </ul>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                Your first reading arrives within 24 hours, followed by a new reading every month as a beautiful PDF.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">
+                And because your pet's world changes, their reading changes too. You can also ask a new question whenever you like.
+              </p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 24px 0;">
+                ❤️ $13.99/month, cancel anytime, no lock-in.
               </p>
               <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="border-radius:8px;background:#c47d7d;">
-                <a href="${product}" style="display:inline-block;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:15px 34px;border-radius:8px;">Begin ${pet}'s Monthly Reading</a>
+                <a href="${product}" style="display:inline-block;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:15px 34px;border-radius:8px;">Start Your Monthly Pet Soul Reading</a>
               </td></tr></table>
-              <p style="color:#a08070;font-size:14px;line-height:1.8;margin:26px 0 0 0;font-style:italic;">With love and light. 🌟</p>
+              <p style="color:#a08070;font-size:14px;line-height:1.8;margin:26px 0 0 0;font-style:italic;">With love,<br/>Luna 🐾❤️</p>
             </td>
           </tr>
 
