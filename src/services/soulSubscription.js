@@ -93,26 +93,26 @@ async function processSubscriptionOrder(order) {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    // Create it counting the one-time as reading 1 when bought together (avoids a duplicate).
+    // Path A (bought with a one-time): the one-time reading is the intro (reading 1), so this
+    // subscription starts at count 1 and its first delivered reading is a themed monthly
+    // (month 2 style), which reads completely differently from the intro. No duplicate.
+    // Path B (direct): starts at 0, so its first reading is the full intro, using their question.
     const { subscription, isNew } = await resolveOrCreateSubscription(order, details, {
       initialReadingCount: boughtWithOneTime ? 1 : 0,
     });
 
-    // Upsell first order: the one-time reading covers reading 1. Do not queue an immediate
-    // reading; the next one arrives on the next billing cycle (month 2).
-    if (boughtWithOneTime && isNew) {
-      console.log(`[Subscription] Created for ${details.petName} via upsell; first reading covered by the one-time, next reading next cycle (order ${order.id})`);
-      continue;
-    }
-
     const monthNumber = (subscription.reading_count || 0) + 1;
-    if (isNew && details.firstQuestion) {
+
+    // Carry the customer's question only into a direct subscription's intro reading. For an
+    // upsell, the one-time reading already answered it, so the monthly stays theme-led.
+    if (isNew && !boughtWithOneTime && details.firstQuestion) {
       const { setPendingQuestion } = require('./supabase');
       await setPendingQuestion(subscription.question_token, details.firstQuestion);
     }
 
     await queueSubscriptionReading(subscription.id, order.id, monthNumber);
-    console.log(`[Subscription] Queued month ${monthNumber} reading for ${details.petName} (${isNew ? 'new' : 'recurring'}) order ${order.id}`);
+    const kind = boughtWithOneTime && isNew ? 'themed (with one-time intro)' : isNew ? 'intro' : 'recurring';
+    console.log(`[Subscription] Queued month ${monthNumber} ${kind} reading for ${details.petName}, order ${order.id}`);
   }
 }
 
