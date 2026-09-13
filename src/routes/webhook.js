@@ -58,13 +58,18 @@ router.post('/', async (req, res) => {
     });
   }
 
+  // A single order can contain both a one-time reading and a monthly upsell. Handle each
+  // independently. isSoulReadingOrder / processSoulReadingOrder ignore "monthly" line items,
+  // and the subscription handler only touches "monthly" line items, so they never overlap.
   if (isMonthlySubscriptionOrder(order)) {
     recognized = true;
     console.log(`[Webhook] Monthly Soul Reading subscription order received for ${email}`);
     processSubscriptionOrder(order).catch(err => {
       console.error(`[Subscription] Processing failed for ${email}:`, err.message);
     });
-  } else if (isSoulReadingOrder(order)) {
+  }
+
+  if (isSoulReadingOrder(order)) {
     recognized = true;
     console.log(`[Webhook] Soul Reading order received for ${email}`);
     processSoulReadingOrder(order).catch(err => {

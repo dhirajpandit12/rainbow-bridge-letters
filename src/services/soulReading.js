@@ -308,6 +308,7 @@ function extractSoulReadingProperties(lineItem) {
 async function processSoulReadingOrder(order) {
   const lineItems = (order.line_items || []).filter(item => {
     const title = (item.title || '').toLowerCase();
+    if (title.includes('monthly')) return false; // the monthly subscription is handled separately
     return title.includes('pet soul reading') || title.includes('soul reading');
   });
 

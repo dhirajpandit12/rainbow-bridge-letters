@@ -210,7 +210,7 @@ const crypto = require('crypto');
 
 // Find an existing subscription for this email + pet (case-insensitive), or create one,
 // backfilling missing pet details from the customer's past one-time Soul Reading order.
-async function resolveOrCreateSubscription(order, details) {
+async function resolveOrCreateSubscription(order, details, opts = {}) {
   const email = order.email || order.contact_email;
   const petLower = details.petName.trim().toLowerCase();
 
@@ -240,7 +240,7 @@ async function resolveOrCreateSubscription(order, details) {
     life_stage: details.lifeStage || past.life_stage || null,
     personality: details.personality || past.personality || null,
     photo_url: details.photoUrl || past.photo_url || null,
-    reading_count: 0,
+    reading_count: opts.initialReadingCount || 0,
     question_token: crypto.randomBytes(12).toString('hex'),
     status: 'active',
   };
