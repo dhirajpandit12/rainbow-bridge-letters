@@ -1,5 +1,5 @@
 // Monthly Pet Soul Reading subscription — detection, matching/backfill, per-cycle queueing.
-const { resolveOrCreateSubscription, queueSubscriptionReading } = require('./supabase');
+const { resolveOrCreateSubscription, queueSubscriptionReading, getLatestReadingByEmail } = require('./supabase');
 
 function isMonthlySubscriptionOrder(order) {
   const lineItems = order.line_items || [];
@@ -85,8 +85,27 @@ async function processSubscriptionOrder(order) {
         firstQuestion: details.firstQuestion || oneTime.question,
       };
     }
+    // Safety net for a rare checkout that bypassed the form (no pet name): recover the pet
+    // from the customer's most recent past one-time reading, so an existing customer never
+    // gets billed without a reading.
     if (!details.petName) {
-      console.warn(`[Subscription] Missing pet name for order ${order.id} — skipping line item`);
+      const past = await getLatestReadingByEmail(order.email || order.contact_email);
+      if (past && past.pet_name) {
+        details = {
+          petName: past.pet_name,
+          ownerName: details.ownerName || past.owner_name,
+          petCallsYou: details.petCallsYou || past.pet_calls_you,
+          species: details.species || past.species,
+          lifeStage: details.lifeStage || past.life_stage,
+          personality: details.personality || past.personality,
+          photoUrl: details.photoUrl || past.photo_url,
+          firstQuestion: details.firstQuestion,
+        };
+        console.log(`[Subscription] Recovered pet "${details.petName}" from a past order for ${order.email} (form was bypassed), order ${order.id}`);
+      }
+    }
+    if (!details.petName) {
+      console.error(`[Subscription] NEEDS MANUAL ATTENTION — subscription order ${order.id} (${order.email}) has no pet name and no past reading to recover from. Reach out to the customer for details.`);
       continue;
     }
     const key = details.petName.toLowerCase();

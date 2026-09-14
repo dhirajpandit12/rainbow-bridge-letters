@@ -296,6 +296,18 @@ async function advanceSubscription(subscriptionId, newCount) {
     .eq('id', subscriptionId);
 }
 
+// Most recent past one-time Soul Reading for an email — used to recover pet details when a
+// subscription order arrives with no pet name (a rare checkout that bypassed the form).
+async function getLatestReadingByEmail(email) {
+  const { data } = await supabase
+    .from('soul_reading_orders')
+    .select('pet_name, owner_name, pet_calls_you, species, life_stage, personality, photo_url')
+    .eq('email', email)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return (data || [])[0] || null;
+}
+
 async function getSubscriptionByToken(token) {
   const { data } = await supabase.from('soul_subscriptions').select('id, pet_name, status').eq('question_token', token).maybeSingle();
   return data;
@@ -312,5 +324,5 @@ module.exports = {
   saveSoulBlueprintToQueue, getPendingSoulBlueprints, markSoulBlueprintProcessing, markSoulBlueprintProcessed, markSoulBlueprintFailed, saveGeneratedBlueprint,
   resolveOrCreateSubscription, queueSubscriptionReading, getPendingSubscriptionReadings,
   markSubscriptionReadingProcessing, markSubscriptionReadingProcessed, markSubscriptionReadingFailed,
-  advanceSubscription, getSubscriptionByToken, setPendingQuestion,
+  advanceSubscription, getSubscriptionByToken, setPendingQuestion, getLatestReadingByEmail,
 };
