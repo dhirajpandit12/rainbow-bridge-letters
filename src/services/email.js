@@ -115,7 +115,7 @@ async function sendSoulReadingEmail({ toEmail, ownerName, petName, pdfBuffer, as
               <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Reconnect every month</p>
               <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">${petName}'s heart, mood, and needs keep changing. With <strong>Pet Soul Reading, Monthly</strong> you receive a fresh reading every month, and you can ask ${petName} a new question each time.</p>
               <a href="https://www.healyourinnerpeace.com/products/pet-soul-reading-monthly?variant=54013916021036&selling_plan=695517053228" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Start ${petName}'s Monthly Reading</a>
-              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">$13.99/month. Cancel anytime.</p>
+              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">$14.99/month. Cancel anytime.</p>
             </td>
           </tr>`;
 
@@ -347,7 +347,7 @@ async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubU
                 And because your pet's world changes, their reading changes too. You can also ask a new question whenever you like.
               </p>
               <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 24px 0;">
-                ❤️ $13.99/month, cancel anytime, no lock-in.
+                ❤️ $14.99/month, cancel anytime, no lock-in.
               </p>
               <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="border-radius:8px;background:#c47d7d;">
                 <a href="${product}" style="display:inline-block;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:15px 34px;border-radius:8px;">Start Your Monthly Pet Soul Reading</a>
