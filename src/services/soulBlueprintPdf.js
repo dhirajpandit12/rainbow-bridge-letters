@@ -12,7 +12,7 @@ async function generateSoulBlueprintPdf({ name, birth, reading, closing, intenti
   const pal = PALETTES[g.month];
 
   // Cover mandala: no baked caption (avoids double name), transparent bg (no square edge).
-  const svg = buildSVG(name, birth, 2000, { showCaption: false, transparentBg: true });
+  const svg = buildSVG(name, birth, 4000, { showCaption: false, transparentBg: true });
   const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
