@@ -103,8 +103,19 @@ function spokes(cx, cy, r0, r1, count, stroke, w, rot, op) {
   return s;
 }
 
+// Multiply a #rrggbb toward black (factor 0..1) — used to darken pastel line colours so the
+// mandala reads cleanly as fine dark line-art on a white print.
+function darken(hex, f) {
+  const m = hex.replace('#', '');
+  const n = parseInt(m.length === 3 ? m.split('').map(c => c + c).join('') : m, 16);
+  const r = Math.round(((n >> 16) & 255) * f);
+  const gg = Math.round(((n >> 8) & 255) * f);
+  const b = Math.round((n & 255) * f);
+  return '#' + [r, gg, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+}
+
 function buildSVG(name, birth, S = 2000, opts = {}) {
-  const { showCaption = true, transparentBg = false } = opts;
+  const { showCaption = true, transparentBg = false, lightTheme = false } = opts;
   const g = soulNumber(name, birth);
   const pal = PALETTES[g.month];
   const cx = S / 2, cy = S / 2;
@@ -112,12 +123,17 @@ function buildSVG(name, birth, S = 2000, opts = {}) {
   const k = S / 900;              // stroke scale factor
   const rot = g.rotation * Math.PI / 180;
 
+  // Light (print) theme: dark hued line-art on white, no glow/aura/vignette.
+  const lineCol = lightTheme ? darken(pal.line, 0.5) : pal.line;
+  const accentCol = lightTheme ? darken(pal.line, 0.4) : pal.accent;
+  const filterAttr = lightTheme ? '' : ' filter="url(#glow)"';
+
   const layers = [
-    flowerOfLife(cx, cy, R * 0.16, pal.line, 1.4 * k, 1),
-    rosette(cx, cy, R * 0.62, g.petals, pal.line, 1.3 * k, rot, 0.72),
-    starPolygon(cx, cy, R * 0.9, g.starPoints, pal.accent, 1.3 * k, rot),
-    rosette(cx, cy, R * 0.34, g.petals, pal.accent, 0.9 * k, -rot, 0.42),
-    spokes(cx, cy, R * 0.16, R * 0.9, g.starPoints, pal.line, 0.5 * k, rot, 0.22),
+    flowerOfLife(cx, cy, R * 0.16, lineCol, 1.4 * k, 1),
+    rosette(cx, cy, R * 0.62, g.petals, lineCol, 1.3 * k, rot, 0.72),
+    starPolygon(cx, cy, R * 0.9, g.starPoints, accentCol, 1.3 * k, rot),
+    rosette(cx, cy, R * 0.34, g.petals, accentCol, 0.9 * k, -rot, 0.42),
+    spokes(cx, cy, R * 0.16, R * 0.9, g.starPoints, lineCol, 0.5 * k, rot, 0.22),
   ].join("");
 
   return `<svg viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">
@@ -138,17 +154,16 @@ function buildSVG(name, birth, S = 2000, opts = {}) {
       <feGaussianBlur stdDeviation="${9 * k}"/>
     </filter>
   </defs>
-  ${transparentBg ? '' : `<rect width="${S}" height="${S}" fill="url(#bg)"/>`}
-  <!-- faint aura behind the figure -->
-  <circle cx="${cx}" cy="${cy}" r="${R * 0.55}" fill="${pal.line}" opacity="0.06" filter="url(#softglow)"/>
-  <circle cx="${cx}" cy="${cy}" r="${R * 0.97}" fill="none" stroke="${pal.line}" stroke-width="${1.4 * k}" opacity="0.42"/>
-  <circle cx="${cx}" cy="${cy}" r="${R * 1.02}" fill="none" stroke="${pal.line}" stroke-width="${0.6 * k}" opacity="0.2"/>
-  <g filter="url(#glow)">${layers}</g>
-  <circle cx="${cx}" cy="${cy}" r="${5 * k}" fill="${pal.accent}" filter="url(#glow)"/>
-  ${transparentBg ? '' : `<rect width="${S}" height="${S}" fill="url(#vig)"/>`}
-  ${showCaption ? `<text x="${cx}" y="${S - 100 * k}" text-anchor="middle" fill="${pal.line}" opacity="0.92"
+  ${transparentBg || lightTheme ? '' : `<rect width="${S}" height="${S}" fill="url(#bg)"/>`}
+  ${lightTheme ? '' : `<circle cx="${cx}" cy="${cy}" r="${R * 0.55}" fill="${pal.line}" opacity="0.06" filter="url(#softglow)"/>`}
+  <circle cx="${cx}" cy="${cy}" r="${R * 0.97}" fill="none" stroke="${lineCol}" stroke-width="${1.4 * k}" opacity="${lightTheme ? 0.55 : 0.42}"/>
+  <circle cx="${cx}" cy="${cy}" r="${R * 1.02}" fill="none" stroke="${lineCol}" stroke-width="${0.6 * k}" opacity="${lightTheme ? 0.3 : 0.2}"/>
+  <g${filterAttr}>${layers}</g>
+  <circle cx="${cx}" cy="${cy}" r="${5 * k}" fill="${accentCol}"${filterAttr}/>
+  ${transparentBg || lightTheme ? '' : `<rect width="${S}" height="${S}" fill="url(#vig)"/>`}
+  ${showCaption ? `<text x="${cx}" y="${S - 100 * k}" text-anchor="middle" fill="${lineCol}" opacity="0.92"
     font-family="Georgia, 'Times New Roman', serif" font-size="${34 * k}" letter-spacing="${7 * k}">${name.toUpperCase()}</text>
-  <text x="${cx}" y="${S - 60 * k}" text-anchor="middle" fill="${pal.accent}" opacity="0.55"
+  <text x="${cx}" y="${S - 60 * k}" text-anchor="middle" fill="${accentCol}" opacity="0.55"
     font-family="Georgia, serif" font-size="${14 * k}" letter-spacing="${5 * k}">SOUL NUMBER ${g.reduced}  ·  ${pal.name.toUpperCase()}</text>` : ''}
 </svg>`;
 }

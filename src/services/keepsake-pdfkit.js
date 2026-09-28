@@ -4,7 +4,7 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
-function buildKeepsakePDF({ name, meta, frameMeta, focus, imagePath, reading, closing, outPath }) {
+function buildKeepsakePDF({ name, meta, frameMeta, focus, imagePath, lightImagePath, reading, closing, outPath }) {
   const doc = new PDFDocument({ size: "A4", margin: 0 });
   const stream = fs.createWriteStream(outPath);
   doc.pipe(stream);
@@ -85,6 +85,27 @@ function buildKeepsakePDF({ name, meta, frameMeta, focus, imagePath, reading, cl
     .text(name.toUpperCase(), 0, fY + fW + 42, { align: "center", characterSpacing: 8 });
   doc.fillColor(GOLD).fontSize(10)
     .text(frameMeta || meta, 0, fY + fW + 80, { align: "center", characterSpacing: 4 });
+
+  // ---------- FINAL PAGE (LIGHT): FRAMABLE ART ON WHITE — best for printing ----------
+  // Same gallery piece on a white ground with dark line-art, so it prints cleanly without
+  // flooding a page with dark ink.
+  if (lightImagePath) {
+    doc.addPage();
+    doc.rect(0, 0, W, H).fill("#ffffff");
+
+    doc.lineWidth(1.2).strokeColor(GOLD).opacity(0.9)
+      .rect(pad, pad, W - pad * 2, H - pad * 2).stroke();
+    doc.lineWidth(0.5).strokeColor("#d9c48a").opacity(0.8)
+      .rect(pad + 7, pad + 7, W - (pad + 7) * 2, H - (pad + 7) * 2).stroke();
+    doc.opacity(1);
+
+    doc.image(lightImagePath, fX, fY, { width: fW, height: fW });
+
+    doc.fillColor("#2a2620").font("Times-Roman").fontSize(26)
+      .text(name.toUpperCase(), 0, fY + fW + 42, { align: "center", characterSpacing: 8 });
+    doc.fillColor(GOLD).fontSize(10)
+      .text(frameMeta || meta, 0, fY + fW + 80, { align: "center", characterSpacing: 4 });
+  }
 
   doc.end();
   return new Promise((res) => stream.on("finish", () => res(outPath)));
