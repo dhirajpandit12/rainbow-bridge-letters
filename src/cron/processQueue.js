@@ -3,14 +3,17 @@ const {
   getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
   getPendingSoulBlueprints, markSoulBlueprintProcessing, markSoulBlueprintProcessed, markSoulBlueprintFailed, saveGeneratedBlueprint,
   getPendingSubscriptionReadings, markSubscriptionReadingProcessing, markSubscriptionReadingProcessed, markSubscriptionReadingFailed, advanceSubscription,
+  getPendingJourneyLetters, markJourneyLetterProcessing, markJourneyLetterProcessed, markJourneyLetterFailed,
+  advanceJourney, setJourneyStatus, saveJourneyRblSummary, getJourneyPriorSummaries, getRblLetterBody, queueJourneyLetter,
 } = require('../services/supabase');
-const { generateLetter } = require('../services/rainbowLetter');
+const { generateLetter, generateJourneyLetter, summarizeLetter } = require('../services/rainbowLetter');
+const { themeForIndex } = require('../services/rainbowJourney');
 const { generatePdf } = require('../services/pdfGenerator');
 const { generateSoulReading, generateMonthlyReading, themeForMonth } = require('../services/soulReading');
 const { generateSoulReadingPdf } = require('../services/soulReadingPdf');
 const { generateBlueprintReading, blueprintFacts } = require('../services/soulBlueprint');
 const { generateSoulBlueprintPdf } = require('../services/soulBlueprintPdf');
-const { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail } = require('../services/email');
+const { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail, sendJourneyLetterEmail } = require('../services/email');
 
 async function processRainbowOrders() {
   let orders;
@@ -193,11 +196,98 @@ async function processSubscriptionReadings() {
   }
 }
 
+// Anniversary = within 3 days of the month/day the pet passed (any year).
+function isNearAnniversary(passedDate) {
+  if (!passedDate) return false;
+  const d = new Date(passedDate);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  const thisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+  return Math.abs((thisYear.getTime() - now.getTime()) / 86400000) <= 3;
+}
+
+async function processJourneyLetters() {
+  let jobs;
+  try {
+    jobs = await getPendingJourneyLetters();
+  } catch (err) {
+    console.error('[Cron] Failed to fetch journey letters:', err.message);
+    return;
+  }
+
+  for (const job of jobs) {
+    const journey = job.rainbow_journeys;
+    if (!journey) { await markJourneyLetterFailed(job.id, 'journey missing'); continue; }
+    const n = job.letter_index;
+    try {
+      if (n > 6) {
+        await markJourneyLetterFailed(job.id, 'beyond letter 6');
+        await setJourneyStatus(journey.id, 'completed');
+        continue;
+      }
+      // Monthly gate: send letter n only once cycle n is paid. Prepay has paid_cycles = 6.
+      if (journey.plan === 'monthly' && (journey.paid_cycles || 0) < n) {
+        continue; // leave pending; a later run sends it once the renewal is charged
+      }
+
+      await markJourneyLetterProcessing(job.id);
+      console.log(`[Cron] Generating Healing Journey letter ${n} for ${journey.pet_name} (${journey.email})`);
+
+      const details = {
+        petName: journey.pet_name, ownerName: journey.owner_name, calledYou: journey.called_you,
+        petType: journey.pet_type, gender: journey.gender, passedDate: journey.passed_date,
+        personality: journey.personality, favoriteMemory: journey.favorite_memory,
+        messageToPet: journey.message_to_pet, photoUrl: journey.photo_url,
+      };
+
+      // Type A: lazily build the "Letter 0" summary from the original RBL letter, once.
+      let rblSummary = journey.rbl_summary || '';
+      if (!rblSummary && journey.buyer_type === 'A') {
+        const body = await getRblLetterBody({ sourceOrderId: journey.source_rbl_order_id, email: journey.email, petName: journey.pet_name });
+        if (body) {
+          rblSummary = await summarizeLetter(body);
+          if (rblSummary) await saveJourneyRblSummary(journey.id, rblSummary);
+        }
+      }
+
+      const priorSummaries = await getJourneyPriorSummaries(journey.id);
+      const base = themeForIndex(n);
+      const theme = { title: job.theme || base.title, core: base.core };
+      const anniversary = isNearAnniversary(journey.passed_date);
+
+      const letterBody = await generateJourneyLetter(details, { letterIndex: n, theme, priorSummaries, rblSummary, anniversary });
+      const summary = await summarizeLetter(letterBody);
+
+      const pdfBuffer = await generatePdf({
+        calledYou: details.calledYou, letterBody, petName: details.petName,
+        photoUrl: details.photoUrl, letterLabel: `Letter ${n} of 6`,
+      });
+      await sendJourneyLetterEmail({ toEmail: journey.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer, letterIndex: n });
+
+      await markJourneyLetterProcessed(job.id, letterBody, summary);
+      await advanceJourney(journey.id, n);
+
+      // Queue the next letter for both plans. Monthly's paid_cycles gate holds it until the
+      // renewal is charged; prepay (paid_cycles = 6) lets it flow on the monthly schedule.
+      if (n < 6) {
+        const nextIdx = n + 1;
+        const delayMs = process.env.INSTANT_SEND === 'true' ? 0 : 30 * 86400000;
+        await queueJourneyLetter(journey.id, job.shopify_order_id, nextIdx, themeForIndex(nextIdx).title, new Date(Date.now() + delayMs));
+      }
+      console.log(`[Cron] Healing Journey letter ${n} sent for ${journey.pet_name}${n >= 6 ? ' (journey completed)' : ''}`);
+    } catch (err) {
+      console.error(`[Cron] Journey letter ${job.id} failed:`, err.message);
+      await markJourneyLetterFailed(job.id, err.message.slice(0, 100));
+    }
+  }
+}
+
 async function processQueue() {
   await processRainbowOrders();
   await processSoulReadingOrders();
   await processSoulBlueprintOrders();
   await processSubscriptionReadings();
+  await processJourneyLetters();
 
   // Marketing drip: invite past customers to the monthly subscription (~50/day).
   // Only runs when explicitly turned on, so it never sends by accident.

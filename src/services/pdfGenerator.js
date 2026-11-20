@@ -43,16 +43,21 @@ function splitParagraphsByWordCount(paragraphs, page1Ratio = 0.5) {
 
 // Fraction of content that should go on page 1, based on each page's actual text height.
 // Page 1 has no signature; page 2 loses room to the signature (more so when a photo is shown).
-function computePage1Ratio(hasPhoto) {
+function computePage1Ratio(hasPhoto, hasLabel) {
   const GREETING_SPACE = 46; // "Dear X," heading only on page 1
+  const LABEL_SPACE = hasLabel ? 24 : 0; // "LETTER X OF 6" line only on page 1
   const sigHeight = hasPhoto ? SIGNATURE_HEIGHT_PHOTO : SIGNATURE_HEIGHT;
-  const page1Height = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING_P1 - GREETING_SPACE;
+  const page1Height = PAGE_HEIGHT - CONTENT_TOP_PADDING - CONTENT_BOTTOM_PADDING_P1 - GREETING_SPACE - LABEL_SPACE;
   const page2Height = PAGE_HEIGHT - CONTENT_TOP_PADDING - (CONTENT_BOTTOM_PADDING + sigHeight + 16);
   return page1Height / (page1Height + page2Height);
 }
 
-function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss, photoDataUrl }) {
+function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage, includeSignature, fontCss, photoDataUrl, letterLabel }) {
   const bodyHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n');
+
+  const labelHtml = (isFirstPage && letterLabel)
+    ? `<div class="letter-label">${letterLabel}</div>`
+    : '';
 
   const photoHtml = (includeSignature && photoDataUrl)
     ? `<div class="sig-photo"><img src="${photoDataUrl}" alt="${petName}"/></div>`
@@ -115,6 +120,11 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
       border: 3px solid #c47d7d;
     }
     .sig-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .letter-label {
+      font-family: 'Lato', sans-serif;
+      font-size: 10px; font-weight: 700; color: #c4913a; letter-spacing: 3px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
     .greeting {
       font-family: 'Dancing Script', cursive;
       font-size: 28px; font-weight: 600; color: #c47d7d; margin-bottom: 18px;
@@ -136,6 +146,7 @@ function buildPageHtml({ calledYou, paragraphs, petName, bgDataUrl, isFirstPage,
 <body>
   <div class="page">
     <div class="text-area">
+      ${labelHtml}
       ${greetingHtml}
       <div class="letter-body">${bodyHtml}</div>
     </div>
@@ -165,7 +176,7 @@ async function mergePdfs(buffers) {
   return Buffer.from(mergedBytes);
 }
 
-async function generatePdf({ calledYou, letterBody, petName, photoUrl }) {
+async function generatePdf({ calledYou, letterBody, petName, photoUrl, letterLabel }) {
   const bgDataUrl = getBgDataUrl();
   const fontCss = await getInlineFontCss();
   const paragraphs = parseParagraphs(letterBody);
@@ -178,7 +189,7 @@ async function generatePdf({ calledYou, letterBody, petName, photoUrl }) {
 
   // Split content proportional to each page's real available height (page 2 is smaller
   // because of the signature/photo), so page 1 fills up and page 2 does not overflow.
-  const page1Ratio = computePage1Ratio(!!photoDataUrl);
+  const page1Ratio = computePage1Ratio(!!photoDataUrl, !!letterLabel);
   const [page1Paras, page2Paras] = splitParagraphsByWordCount(paragraphs, page1Ratio);
 
   const isLocal = process.env.IS_LOCAL === 'true';
@@ -198,7 +209,7 @@ async function generatePdf({ calledYou, letterBody, petName, photoUrl }) {
     const pg1 = await browser.newPage();
     await pg1.setContent(buildPageHtml({
       calledYou, paragraphs: page1Paras, petName, bgDataUrl,
-      isFirstPage: true, includeSignature: false, fontCss,
+      isFirstPage: true, includeSignature: false, fontCss, letterLabel,
     }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await pg1.evaluate(() => document.fonts.ready);
     pdfBuffers.push(await pg1.pdf({

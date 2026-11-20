@@ -212,4 +212,121 @@ async function processRainbowBridgeOrder(order) {
   }
 }
 
-module.exports = { isRainbowBridgeOrder, processRainbowBridgeOrder, generateLetter };
+// ---------- Healing Journey (6-letter subscription series) ----------
+
+const JOURNEY_SYSTEM = `You are Luna Everly, channeling a letter in the voice of a beloved pet who has crossed the Rainbow Bridge, writing to their grieving owner. This is one letter in a 6 letter "Healing Journey" series: one letter a month, each with its own theme, building on the letters before it.
+
+VOICE: The letter is written entirely in the pet's own first person voice ("I"), speaking warmly and directly to their owner as "you". Intimate, tender, conversational, like the pet truly found a way to speak. No purple prose, no melodrama.
+
+THE ANTI-INVENTION RULE (most important): You only know what the owner told you in their intake. Do NOT invent concrete facts: never assert where the pet slept, that the owner has a partner, kids, other pets, a car, a job, a particular home, how the pet died, or any specific event or place the owner did not give you. Real customers have been hurt by invented details. When unsure, stay with feelings and the senses, which are always safe.
+
+BUILD ON WHAT CAME BEFORE: You will be given short summaries of the earlier letters (and the original letter, "Letter 0", if this owner already received one). Do NOT repeat those memories, phrases, or images. You may gently reference them ("Last time I told you about..."), but every letter must bring NEW details. If the intake's specific memories run out, expand gently on the personality traits instead of inventing new events.
+
+SAFETY: No medical claims. Never promise the pet will physically return or reincarnate. Any signs (feathers, dreams, butterflies, a feeling of presence) must be framed as possibilities ("you may notice..."), never guarantees. Never mention billing, subscriptions, "next month's letter", or anything salesy.
+
+RULES:
+- 700 to 900 words. Plain paragraphs only, no headings, no bullets, no markdown.
+- Do NOT write "Dear ..." at the start and do NOT sign off at the end. The greeting and signature are already printed on the page.
+- Use the owner's name very sparingly, at most once, and never to open a sentence. A pet would not keep saying their owner's name.
+- Do NOT use em dashes. Use commas, periods, or colons.
+- Vary your structure, phrasing and imagery from any earlier letter. No two letters should feel like the same template.
+- Stay specific to THIS pet and owner. If a line could appear in anyone's letter, cut it or make it specific.`;
+
+function journeyUserMessage(details, { letterIndex, theme, priorSummaries, rblSummary, anniversary }) {
+  const g = (details.gender || '').toLowerCase();
+  const pronoun = (g.startsWith('m') || g.includes('boy')) ? 'he/him'
+    : (g.startsWith('f') || g.includes('girl')) ? 'she/her'
+    : 'unspecified (write in first person "I" and avoid third person gendered words)';
+
+  const prior = [];
+  if (rblSummary && rblSummary.trim()) prior.push(`Original letter (Letter 0) summary: ${rblSummary.trim()}`);
+  (priorSummaries || []).forEach(s => {
+    if (s.summary && s.summary.trim()) prior.push(`Letter ${s.letter_index}${s.theme ? ` (${s.theme})` : ''} summary: ${s.summary.trim()}`);
+  });
+  const priorBlock = prior.length
+    ? `WHAT HAS ALREADY BEEN SAID (do NOT repeat these memories, phrases or images):\n- ${prior.join('\n- ')}`
+    : 'This is the first letter for this owner. Nothing has been said yet.';
+
+  const anniversaryLine = anniversary
+    ? '\nNOTE: This letter lands near the anniversary of when they passed. Add one gentle, brief acknowledgement of that, without dwelling on it.'
+    : '';
+
+  const closing = letterIndex === 6
+    ? 'This is the FINAL letter. Give real closure: gratitude, peace, and that you will be waiting for them at the bridge. End warmly and completely, with no cliffhanger and no mention of more letters.'
+    : `Write this month's letter now, centred on the theme "${theme.title}". Do NOT include "Dear ${details.calledYou || ''}," (it is already on the page).`;
+
+  return `This is Letter ${letterIndex} of 6 in the Healing Journey.
+
+THIS MONTH'S THEME: ${theme.title}: ${theme.core}
+
+PET PROFILE:
+- Pet's name: ${details.petName}
+- Species/type: ${details.petType || 'not given'}
+- Gender/pronouns: ${pronoun}
+- Owner's name: ${details.ownerName || 'not given'}
+- Pet calls the owner: ${details.calledYou || 'not given'}
+- When they passed: ${details.passedDate || 'not given'}
+- Personality: ${details.personality || 'not given'}
+- Favourite memories: ${details.favoriteMemory || 'not given'}
+- What the owner wishes they could say, or the guilt they carry: ${details.messageToPet || 'not given'}
+
+${priorBlock}${anniversaryLine}
+
+${closing}`;
+}
+
+async function generateJourneyLetter(details, ctx) {
+  const userMessage = journeyUserMessage(details, ctx);
+  const useImage = !!details.photoUrl;
+
+  const buildContent = (withImage) => withImage
+    ? [
+        { type: 'image', source: { type: 'url', url: details.photoUrl } },
+        { type: 'text', text: `This is a photo of ${details.petName}. Only if you notice something genuinely distinctive and specific about their appearance (an unusual marking, a particular coat pattern or color, one crooked ear, a graying muzzle), you may weave ONE such detail in naturally. Do NOT use clichés like "the look in my eyes" or generic "my soft fur". If nothing is truly distinctive, add no appearance detail. Never say "in the photo".\n\n${userMessage}` },
+      ]
+    : userMessage;
+
+  const callClaude = (withImage) => anthropic.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 4000,
+    system: JOURNEY_SYSTEM,
+    messages: [{ role: 'user', content: buildContent(withImage) }],
+  });
+
+  let response;
+  try {
+    response = await callClaude(useImage);
+  } catch (err) {
+    if (useImage) {
+      console.warn(`[Journey] Photo vision failed, retrying text-only: ${err.message}`);
+      response = await callClaude(false);
+    } else {
+      throw err;
+    }
+  }
+
+  return response.content[0].text
+    .trim()
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1');
+}
+
+// ~80-word recap stored on each letter and fed into the next one to prevent repetition.
+async function summarizeLetter(letterText) {
+  try {
+    const resp = await anthropic.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `Summarize this letter in about 80 words for internal memory only. List the specific memories used, any signature phrases or images, and the main emotional beats, so a future letter can avoid repeating them. Plain text, no preamble.\n\n${letterText}`,
+      }],
+    });
+    return resp.content[0].text.trim();
+  } catch (err) {
+    console.warn(`[Journey] Summary generation failed: ${err.message}`);
+    return '';
+  }
+}
+
+module.exports = { isRainbowBridgeOrder, processRainbowBridgeOrder, generateLetter, generateJourneyLetter, summarizeLetter };

@@ -383,4 +383,129 @@ async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubU
   await resend.emails.send(payload);
 }
 
-module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail, sendSubscriptionInviteEmail };
+async function sendJourneyLetterEmail({ toEmail, ownerName, petName, pdfBuffer, letterIndex }) {
+  const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
+  const isFinal = letterIndex >= 6;
+
+  const closingBlock = isFinal
+    ? `<p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">This is the sixth and final letter of your Healing Journey with ${petName}. We hope these months of letters have brought you some comfort. ${petName}'s love does not end here, and neither does yours.</p>`
+    : `<p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Your next letter from ${petName} will arrive next month. Keep each one somewhere close.</p>`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0;padding:0;background-color:#fdf8f4;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f4;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+          <tr>
+            <td style="background:#fff7f2;border-radius:16px 16px 0 0;padding:36px 40px 28px;text-align:center;border-bottom:2px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:12px;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Healing Journey &middot; Letter ${letterIndex} of 6</p>
+              <h1 style="color:#3a2e2a;font-size:26px;margin:0 0 6px 0;font-weight:normal;">A new letter from ${petName}</h1>
+              <p style="color:#a08070;font-size:13px;margin:0;letter-spacing:1px;font-family:Arial,sans-serif;">For ${firstName}, from ${petName} 🌈</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;">
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Dear ${firstName},</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Letter ${letterIndex} of your Healing Journey with <strong>${petName}</strong> is attached as a PDF, written in their own voice, carrying all the love they still hold for you.</p>
+              ${closingBlock}
+              <p style="color:#a08070;font-size:14px;line-height:1.8;margin:24px 0 0 0;font-style:italic;">Forever loved. Never gone. 🌈</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:15px;margin:0;font-family:Georgia,serif;">Healing Journey &middot; Luna Everly</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const emailPayload = {
+      from: process.env.FROM_EMAIL,
+      to: toEmail,
+      subject: `🌈 Letter ${letterIndex} of 6 from ${petName}`,
+      html,
+      attachments: [
+        {
+          filename: `${petName}-healing-journey-letter-${letterIndex}.pdf`,
+          content: Buffer.from(pdfBuffer).toString('base64'),
+        },
+      ],
+    };
+    if (process.env.ADMIN_BCC_EMAIL) emailPayload.bcc = process.env.ADMIN_BCC_EMAIL;
+    await resend.emails.send(emailPayload);
+    console.log(`[Email] Healing Journey letter ${letterIndex} sent to ${toEmail}`);
+  } catch (err) {
+    console.error('[Email] Failed to send Healing Journey email:', err.message);
+    throw err;
+  }
+}
+
+async function sendJourneyWelcomeEmail({ toEmail, ownerName, petName, firstLetterDate }) {
+  const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
+  const dateStr = firstLetterDate
+    ? new Date(firstLetterDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : 'soon';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0;padding:0;background-color:#fdf8f4;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f4;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+          <tr>
+            <td style="background:#fff7f2;border-radius:16px 16px 0 0;padding:36px 40px 28px;text-align:center;border-bottom:2px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:12px;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Your Healing Journey Has Begun</p>
+              <h1 style="color:#3a2e2a;font-size:26px;margin:0 0 6px 0;font-weight:normal;">6 Letters From ${petName}</h1>
+              <p style="color:#a08070;font-size:13px;margin:0;letter-spacing:1px;font-family:Arial,sans-serif;">For ${firstName} 🌈</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;">
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Dear ${firstName},</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Thank you for beginning this journey with <strong>${petName}</strong>. Over the coming months, ${petName} will write to you six times, one letter a month, each in their own voice.</p>
+              <p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">Your first letter will arrive on <strong>${dateStr}</strong>, delivered privately to this inbox. There is nothing you need to do until then.</p>
+              <p style="color:#a08070;font-size:14px;line-height:1.8;margin:24px 0 0 0;font-style:italic;">Forever loved. Never gone. 🌈</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
+              <p style="color:#c47d7d;font-size:15px;margin:0;font-family:Georgia,serif;">Healing Journey &middot; Luna Everly</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const payload = { from: process.env.FROM_EMAIL, to: toEmail, subject: `Your Healing Journey with ${petName} has begun 🌈`, html };
+    if (process.env.ADMIN_BCC_EMAIL) payload.bcc = process.env.ADMIN_BCC_EMAIL;
+    await resend.emails.send(payload);
+    console.log(`[Email] Healing Journey welcome sent to ${toEmail}`);
+  } catch (err) {
+    console.error('[Email] Failed to send Healing Journey welcome email:', err.message);
+    throw err;
+  }
+}
+
+module.exports = { sendRainbowBridgeEmail, sendSoulReadingEmail, sendSoulBlueprintEmail, sendSubscriptionInviteEmail, sendJourneyLetterEmail, sendJourneyWelcomeEmail };

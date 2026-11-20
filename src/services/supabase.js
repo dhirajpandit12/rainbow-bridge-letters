@@ -318,8 +318,168 @@ async function setPendingQuestion(token, question) {
   if (error) throw new Error(`Could not save question: ${error.message}`);
 }
 
+// ---------- Healing Journey (Rainbow Bridge Letter subscription) ----------
+
+// Find a past Rainbow Bridge Letter order to link a journey to (Type A buyer).
+// Priority: explicit source order id, then email + pet name, then a lone customer match.
+// Returns { order, method, ambiguous } where ambiguous = multiple pets, no name match.
+async function findRblForJourney({ sourceOrderId, email, petName }) {
+  if (sourceOrderId) {
+    const { data } = await supabase.from('rainbow_orders').select('*')
+      .eq('shopify_order_id', String(sourceOrderId)).limit(1);
+    if (data && data[0]) return { order: data[0], method: 'order_id', ambiguous: false };
+  }
+  if (!email) return { order: null, method: null, ambiguous: false };
+  const { data: rows } = await supabase.from('rainbow_orders').select('*')
+    .eq('email', email).order('created_at', { ascending: false });
+  const all = rows || [];
+  if (!all.length) return { order: null, method: null, ambiguous: false };
+  if (petName) {
+    const pl = petName.trim().toLowerCase();
+    const m = all.find(o => (o.pet_name || '').trim().toLowerCase() === pl);
+    if (m) return { order: m, method: 'customer+petname', ambiguous: false };
+  }
+  const names = new Set(all.map(o => (o.pet_name || '').trim().toLowerCase()).filter(Boolean));
+  if (names.size === 1) return { order: all[0], method: 'customer', ambiguous: false };
+  return { order: null, method: null, ambiguous: true };
+}
+
+async function resolveOrCreateJourney(order, details, opts = {}) {
+  const email = order.email || order.contact_email;
+  const petLower = (details.petName || '').trim().toLowerCase();
+  const { data: existing } = await supabase.from('rainbow_journeys').select('*').eq('email', email);
+  const found = (existing || []).find(j => (j.pet_name || '').trim().toLowerCase() === petLower);
+  if (found) return { journey: found, isNew: false };
+
+  const row = {
+    first_order_id: String(order.id),
+    email,
+    shopify_customer_id: order.customer ? String(order.customer.id) : null,
+    pet_name: (details.petName || '').trim(),
+    owner_name: details.ownerName || null,
+    called_you: details.calledYou || 'Mom',
+    pet_type: details.petType || null,
+    gender: details.gender || null,
+    passed_date: details.passedDate || null,
+    personality: details.personality || null,
+    favorite_memory: details.favoriteMemory || null,
+    message_to_pet: details.messageToPet || null,
+    photo_url: details.photoUrl || null,
+    source_rbl_order_id: opts.sourceRblOrderId || null,
+    buyer_type: opts.buyerType || 'B',
+    match_method: opts.matchMethod || 'new',
+    status: opts.status || 'active',
+    plan: opts.plan || 'monthly',
+    paid_cycles: opts.paidCycles || 1,
+    letters_sent: 0,
+    next_send_at: opts.nextSendAt ? opts.nextSendAt.toISOString() : null,
+    question_token: crypto.randomBytes(12).toString('hex'),
+  };
+  const { data: created, error } = await supabase.from('rainbow_journeys').insert(row).select('*').single();
+  if (error) throw new Error(`Journey insert failed: ${error.message}`);
+  return { journey: created, isNew: true };
+}
+
+async function queueJourneyLetter(journeyId, shopifyOrderId, letterIndex, theme, sendAfter) {
+  const { error } = await supabase.from('rainbow_journey_letters').insert({
+    journey_id: journeyId,
+    shopify_order_id: shopifyOrderId ? String(shopifyOrderId) : null,
+    letter_index: letterIndex,
+    theme: theme || null,
+    status: 'pending',
+    send_after: (sendAfter || new Date()).toISOString(),
+  });
+  // Duplicate (journey_id, letter_index) → unique violation, safe to ignore (webhook retry).
+  if (error && !/duplicate|unique/i.test(error.message)) throw new Error(`Journey queue failed: ${error.message}`);
+}
+
+async function getPendingJourneyLetters() {
+  const { data, error } = await supabase.from('rainbow_journey_letters')
+    .select('*, rainbow_journeys(*)')
+    .in('status', ['pending', 'processing'])
+    .lte('send_after', new Date().toISOString())
+    .limit(10);
+  if (error) throw new Error(`Journey fetch failed: ${error.message}`);
+  return data || [];
+}
+
+async function markJourneyLetterProcessing(id) {
+  await supabase.from('rainbow_journey_letters').update({ status: 'processing' }).eq('id', id);
+}
+async function markJourneyLetterProcessed(id, letter, summary) {
+  await supabase.from('rainbow_journey_letters').update({
+    status: 'completed', processed_at: new Date().toISOString(),
+    generated_letter: letter, summary: summary || null,
+  }).eq('id', id);
+}
+async function markJourneyLetterFailed(id, reason) {
+  await supabase.from('rainbow_journey_letters').update({ status: `failed: ${reason}` }).eq('id', id);
+}
+
+// After a letter is sent: bump letters_sent, clear next_send_at, complete at 6.
+async function advanceJourney(journeyId, newCount) {
+  const patch = { letters_sent: newCount, next_send_at: null };
+  if (newCount >= 6) { patch.status = 'completed'; patch.completed_at = new Date().toISOString(); }
+  await supabase.from('rainbow_journeys').update(patch).eq('id', journeyId);
+}
+
+async function setJourneyPaidCycles(journeyId, cycles) {
+  await supabase.from('rainbow_journeys').update({ paid_cycles: Math.min(cycles, 6) }).eq('id', journeyId);
+}
+
+async function setJourneyStatus(journeyId, status) {
+  await supabase.from('rainbow_journeys').update({ status }).eq('id', journeyId);
+}
+
+async function saveJourneyRblSummary(journeyId, summary) {
+  await supabase.from('rainbow_journeys').update({ rbl_summary: summary }).eq('id', journeyId);
+}
+
+// Completed journey letters' summaries, in order, fed into the next letter for anti-repetition.
+async function getJourneyPriorSummaries(journeyId) {
+  const { data } = await supabase.from('rainbow_journey_letters')
+    .select('letter_index, theme, summary').eq('journey_id', journeyId)
+    .eq('status', 'completed').order('letter_index', { ascending: true });
+  return (data || []).filter(r => r.summary);
+}
+
+// Original RBL letter body for a journey, used to lazily build its "Letter 0" summary.
+async function getRblLetterBody({ sourceOrderId, email, petName }) {
+  const r = await findRblForJourney({ sourceOrderId, email, petName });
+  return r.order ? (r.order.generated_letter || '') : '';
+}
+
+// Idempotently record a renewal order. Returns { isNew:false } on a duplicate (webhook retry).
+async function recordJourneyRenewal(orderId, journeyId) {
+  const { error } = await supabase.from('rainbow_journey_renewals')
+    .insert({ order_id: String(orderId), journey_id: journeyId });
+  if (error) {
+    if (/duplicate|unique/i.test(error.message)) return { isNew: false };
+    throw new Error(`Renewal record failed: ${error.message}`);
+  }
+  return { isNew: true };
+}
+
+// Active journey matching a renewal order (by email, optional pet name).
+async function findActiveJourney(email, petName) {
+  const { data } = await supabase.from('rainbow_journeys').select('*')
+    .eq('email', email).eq('status', 'active');
+  const list = data || [];
+  if (!list.length) return null;
+  if (petName) {
+    const pl = petName.trim().toLowerCase();
+    const m = list.find(j => (j.pet_name || '').trim().toLowerCase() === pl);
+    if (m) return m;
+  }
+  return list.length === 1 ? list[0] : null;
+}
+
 module.exports = {
   saveOrderToQueue, getPendingOrders, markOrderProcessing, markOrderProcessed, markOrderFailed, saveGeneratedLetter,
+  findRblForJourney, resolveOrCreateJourney, queueJourneyLetter, getPendingJourneyLetters,
+  markJourneyLetterProcessing, markJourneyLetterProcessed, markJourneyLetterFailed,
+  advanceJourney, setJourneyPaidCycles, setJourneyStatus, saveJourneyRblSummary,
+  getJourneyPriorSummaries, getRblLetterBody, findActiveJourney, recordJourneyRenewal,
   saveSoulReadingToQueue, getPendingSoulReadings, markSoulReadingProcessing, markSoulReadingProcessed, markSoulReadingFailed, saveGeneratedReading,
   saveSoulBlueprintToQueue, getPendingSoulBlueprints, markSoulBlueprintProcessing, markSoulBlueprintProcessed, markSoulBlueprintFailed, saveGeneratedBlueprint,
   resolveOrCreateSubscription, queueSubscriptionReading, getPendingSubscriptionReadings,

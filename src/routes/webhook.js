@@ -4,6 +4,7 @@ const { isRainbowBridgeOrder, processRainbowBridgeOrder } = require('../services
 const { isSoulReadingOrder, processSoulReadingOrder } = require('../services/soulReading');
 const { isSoulBlueprintOrder, processSoulBlueprintOrder } = require('../services/soulBlueprint');
 const { isMonthlySubscriptionOrder, processSubscriptionOrder } = require('../services/soulSubscription');
+const { isHealingJourneyOrder, handleHealingJourneyOrder } = require('../services/rainbowJourney');
 
 const router = express.Router();
 
@@ -74,6 +75,17 @@ router.post('/', async (req, res) => {
     console.log(`[Webhook] Soul Reading order received for ${email}`);
     processSoulReadingOrder(order).catch(err => {
       console.error(`[SoulReading] Processing failed for ${email}:`, err.message);
+    });
+  }
+
+  // Healing Journey (Rainbow Bridge subscription). A separate `if` so an order that also
+  // contains a one-time RBL letter (order bump) still gets that letter generated above, while
+  // this starts or advances the 6-letter journey.
+  if (isHealingJourneyOrder(order)) {
+    recognized = true;
+    console.log(`[Webhook] Healing Journey order received for ${email}`);
+    handleHealingJourneyOrder(order).catch(err => {
+      console.error(`[Journey] Processing failed for ${email}:`, err.message);
     });
   }
 
