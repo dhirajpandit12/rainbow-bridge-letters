@@ -201,7 +201,7 @@ router.post('/resend', async (req, res) => {
         await supabase.from('rainbow_orders').update({ email: toEmail }).eq('id', orderId);
       }
       const pdfBuffer = await generatePdf({ calledYou: data.called_you, letterBody, petName: data.pet_name, photoUrl: data.photo_url });
-      await sendRainbowBridgeEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer });
+      await sendRainbowBridgeEmail({ toEmail, ownerName: data.owner_name, petName: data.pet_name, pdfBuffer, rblOrderId: data.shopify_order_id });
       await supabase.from('rainbow_orders').update({ status: 'completed', processed_at: new Date().toISOString() }).eq('id', orderId);
       console.log(`[Admin] Rainbow ${isFresh ? 'freshly generated' : isCorrection ? 'corrected' : 'resent'} for order ${orderId} to ${toEmail}`);
     }

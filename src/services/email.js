@@ -2,8 +2,12 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }) {
+async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer, rblOrderId }) {
   const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
+  const journeyBase = process.env.HEALING_JOURNEY_URL || 'https://www.healyourinnerpeace.com/products/healing-journey-6-letters-from-your-pet-in-heaven';
+  // ?ref carries the original order so the product page can mark them a returning buyer and
+  // reuse this pet's details (no need to fill the intake again).
+  const journeyUrl = rblOrderId ? `${journeyBase}?ref=${encodeURIComponent(rblOrderId)}` : journeyBase;
 
   const html = `
 <!DOCTYPE html>
@@ -49,10 +53,10 @@ async function sendRainbowBridgeEmail({ toEmail, ownerName, petName, pdfBuffer }
 
           <tr>
             <td style="background:#fdf3ee;padding:28px 40px;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-top:2px dashed #f0d5c8;">
-              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">For the pets still with you</p>
-              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">Do you have another pet at home? Discover what they are truly feeling right now with a <strong>Pet Soul Reading</strong>.</p>
-              <a href="https://www.healyourinnerpeace.com/products/pet-soul-reading" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Get a Soul Reading</a>
-              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">Use code <strong style="color:#c47d7d;">PETSOUL10</strong> for 10% off.</p>
+              <p style="color:#a08070;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px 0;font-family:Arial,sans-serif;">Continue the journey</p>
+              <p style="color:#3a2e2a;font-size:15px;line-height:1.7;margin:0 0 14px 0;">This letter is just the beginning. In the <strong>Healing Journey</strong>, ${petName} writes to you once a month for six months, each letter a new chapter: safety, your favourite memories, releasing the guilt, the signs they send, and a gentle goodbye.</p>
+              <a href="${journeyUrl}" style="display:inline-block;background:#c47d7d;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:12px 24px;border-radius:6px;">Begin the Healing Journey</a>
+              <p style="color:#a08070;font-size:12px;margin:12px 0 0 0;font-family:Arial,sans-serif;">Six letters from ${petName}, in their own voice. We already have their details, so there is nothing to fill in again.</p>
             </td>
           </tr>
 
