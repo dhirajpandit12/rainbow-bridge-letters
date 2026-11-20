@@ -383,9 +383,13 @@ async function sendSubscriptionInviteEmail({ toEmail, firstName, petName, unsubU
   await resend.emails.send(payload);
 }
 
-async function sendJourneyLetterEmail({ toEmail, ownerName, petName, pdfBuffer, letterIndex }) {
+async function sendJourneyLetterEmail({ toEmail, ownerName, petName, pdfBuffer, letterIndex, plan }) {
   const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
   const isFinal = letterIndex >= 6;
+  const manageUrl = process.env.SUBSCRIPTION_MANAGE_URL || 'https://www.healyourinnerpeace.com/account';
+  const manageHtml = (plan === 'monthly' && !isFinal)
+    ? `<p style="margin:10px 0 0 0;"><a href="${manageUrl}" style="color:#a08070;font-size:12px;font-family:Arial,sans-serif;">Manage or cancel your journey anytime</a></p>`
+    : '';
 
   const closingBlock = isFinal
     ? `<p style="color:#5a4a42;font-size:15px;line-height:1.8;margin:0 0 18px 0;">This is the sixth and final letter of your Healing Journey with ${petName}. We hope these months of letters have brought you some comfort. ${petName}'s love does not end here, and neither does yours.</p>`
@@ -421,6 +425,7 @@ async function sendJourneyLetterEmail({ toEmail, ownerName, petName, pdfBuffer, 
           <tr>
             <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
               <p style="color:#c47d7d;font-size:15px;margin:0;font-family:Georgia,serif;">Healing Journey &middot; Luna Everly</p>
+              ${manageHtml}
             </td>
           </tr>
         </table>
@@ -452,8 +457,12 @@ async function sendJourneyLetterEmail({ toEmail, ownerName, petName, pdfBuffer, 
   }
 }
 
-async function sendJourneyWelcomeEmail({ toEmail, ownerName, petName, firstLetterDate }) {
+async function sendJourneyWelcomeEmail({ toEmail, ownerName, petName, firstLetterDate, plan }) {
   const firstName = ownerName ? ownerName.split(' ')[0] : 'there';
+  const manageUrl = process.env.SUBSCRIPTION_MANAGE_URL || 'https://www.healyourinnerpeace.com/account';
+  const manageHtml = (plan === 'monthly')
+    ? `<p style="margin:10px 0 0 0;"><a href="${manageUrl}" style="color:#a08070;font-size:12px;font-family:Arial,sans-serif;">Manage or cancel your journey anytime</a></p>`
+    : '';
   const dateStr = firstLetterDate
     ? new Date(firstLetterDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : 'soon';
@@ -488,6 +497,7 @@ async function sendJourneyWelcomeEmail({ toEmail, ownerName, petName, firstLette
           <tr>
             <td style="background:#fff7f2;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;border-top:2px solid #f0d5c8;border-left:1px solid #f0d5c8;border-right:1px solid #f0d5c8;border-bottom:1px solid #f0d5c8;">
               <p style="color:#c47d7d;font-size:15px;margin:0;font-family:Georgia,serif;">Healing Journey &middot; Luna Everly</p>
+              ${manageHtml}
             </td>
           </tr>
         </table>

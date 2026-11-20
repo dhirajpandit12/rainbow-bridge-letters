@@ -162,6 +162,12 @@ async function processSubscriptionReadings() {
     const sub = job.soul_subscriptions;
     if (!sub) { await markSubscriptionReadingFailed(job.id, 'subscription missing'); continue; }
     try {
+      // Cancelled or paused subscriptions must never generate (no API cost, no send).
+      if (sub.status && sub.status !== 'active') {
+        await markSubscriptionReadingFailed(job.id, `subscription ${sub.status}`);
+        console.log(`[Cron] Skipped subscription ${sub.id} reading: status ${sub.status}`);
+        continue;
+      }
       const details = {
         petName: sub.pet_name, ownerName: sub.owner_name, petCallsYou: sub.pet_calls_you,
         photoUrl: sub.photo_url, species: sub.species, lifeStage: sub.life_stage, personality: sub.personality,
@@ -220,6 +226,12 @@ async function processJourneyLetters() {
     if (!journey) { await markJourneyLetterFailed(job.id, 'journey missing'); continue; }
     const n = job.letter_index;
     try {
+      // Cancelled, refunded or paused journeys must never generate (no API cost, no send).
+      if (journey.status && journey.status !== 'active') {
+        await markJourneyLetterFailed(job.id, `journey ${journey.status}`);
+        console.log(`[Cron] Skipped journey ${journey.id} letter ${n}: status ${journey.status}`);
+        continue;
+      }
       if (n > 6) {
         await markJourneyLetterFailed(job.id, 'beyond letter 6');
         await setJourneyStatus(journey.id, 'completed');
@@ -262,7 +274,7 @@ async function processJourneyLetters() {
         calledYou: details.calledYou, letterBody, petName: details.petName,
         photoUrl: details.photoUrl, letterLabel: `Letter ${n} of 6`,
       });
-      await sendJourneyLetterEmail({ toEmail: journey.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer, letterIndex: n });
+      await sendJourneyLetterEmail({ toEmail: journey.email, ownerName: details.ownerName, petName: details.petName, pdfBuffer, letterIndex: n, plan: journey.plan });
 
       await markJourneyLetterProcessed(job.id, letterBody, summary);
       await advanceJourney(journey.id, n);

@@ -56,8 +56,13 @@ function extractJourneyProps(lineItem) {
   };
 }
 
-// Monthly variant carries an Appstle selling plan; Pay Once is a one-time purchase.
+// Plan resolution, most reliable first: the storefront's "Plan" property, then the Appstle
+// selling plan on the line, then the variant title. Monthly variant carries the plan; Pay Once
+// is a one-time purchase.
 function detectPlan(lineItem) {
+  const planProp = (propGetter(lineItem)(['Plan']) || '').toLowerCase();
+  if (planProp.includes('pay once') || planProp.includes('prepay') || planProp.includes('once')) return 'prepay';
+  if (planProp.includes('monthly')) return 'monthly';
   const hasPlan = !!(lineItem.selling_plan_allocation || lineItem.selling_plan);
   const vt = (lineItem.variant_title || lineItem.title || '').toLowerCase();
   if (vt.includes('pay once') || vt.includes('prepay')) return 'prepay';
@@ -215,7 +220,7 @@ async function processJourneyOrder(order) {
     // not left wondering. Type B's first letter arrives within hours, so no welcome needed.
     if (buyerType === 'A') {
       try {
-        await sendJourneyWelcomeEmail({ toEmail: email, ownerName: d.ownerName, petName: d.petName, firstLetterDate: nextSendAt });
+        await sendJourneyWelcomeEmail({ toEmail: email, ownerName: d.ownerName, petName: d.petName, firstLetterDate: nextSendAt, plan });
       } catch (e) {
         console.error(`[Journey] Welcome email failed for ${email}: ${e.message}`);
       }
